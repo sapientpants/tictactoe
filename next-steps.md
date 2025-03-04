@@ -24,15 +24,15 @@
 - ✅ Create scoreboard for multiple rounds
 - ✅ Add options for player names
 
-## 5. Optional Enhancements
-- Implement AI player with difficulty levels
-- Add local multiplayer mode
-- Create online multiplayer using API routes
-- Add theme customization
-- Implement responsive design for mobile
+## 5. ✅ Optional Enhancements
+- ✅ Implement AI player with difficulty levels
+- ✅ Add local multiplayer mode
+- ❌ Create online multiplayer using API routes (not implemented)
+- ✅ Add theme customization
+- ✅ Implement responsive design for mobile
 
 ## 6. Testing and Deployment
 - ✅ Write unit tests for game logic
 - ✅ Create integration tests for game flow
-- Optimize performance
+- ✅ Optimize performance
 - Deploy to Vercel or similar platform

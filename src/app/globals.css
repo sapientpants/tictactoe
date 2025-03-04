@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #3b82f6;
+  --secondary: #7dd3fc;
+  --accent: #e879f9;
+  --board: #f3f4f6;
 }
 
 @theme inline {
@@ -16,6 +20,10 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --primary: #3b82f6;
+    --secondary: #38bdf8;
+    --accent: #c084fc;
+    --board: #1f2937;
   }
 }
 
@@ -23,6 +31,58 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Theme-based colors */
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+.bg-secondary {
+  background-color: var(--secondary);
+}
+
+.text-secondary {
+  color: var(--secondary);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-board {
+  background-color: var(--board);
+}
+
+.border-themed {
+  border-color: var(--primary);
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .responsive-board {
+    transform: scale(0.9);
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-board {
+    transform: scale(0.8);
+  }
+}
+
+@media (max-width: 380px) {
+  .responsive-board {
+    transform: scale(0.7);
+  }
 }
 
 /* Custom Animations */
@@ -46,10 +106,26 @@ body {
   }
 }
 
+@keyframes victoryPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0);
+  }
+}
+
 .animate-appear {
   animation: appear 0.3s ease-in-out;
 }
 
 .animate-pulse {
   animation: pulse 0.5s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.animate-victory {
+  animation: victoryPulse 1.5s infinite;
 }
