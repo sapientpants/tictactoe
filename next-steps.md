@@ -18,11 +18,11 @@
 - ✅ Update display based on game state
 - ✅ Show victory/draw messages
 
-## 4. Enhance User Experience
-- Add animations for moves and game results
-- Implement game history/move tracking
-- Create scoreboard for multiple rounds
-- Add options for player names
+## 4. ✅ Enhance User Experience
+- ✅ Add animations for moves and game results
+- ✅ Implement game history/move tracking
+- ✅ Create scoreboard for multiple rounds
+- ✅ Add options for player names
 
 ## 5. Optional Enhancements
 - Implement AI player with difficulty levels
