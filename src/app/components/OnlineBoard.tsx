@@ -15,10 +15,21 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   const [winner, setWinner] = useState<string | null>(null);
   const [winningLine, setWinningLine] = useState<number[] | null>(null);
   const [isDraw, setIsDraw] = useState(false);
+  const [showRestartNotification, setShowRestartNotification] = useState(false);
   
   // Reset local game state when gameState changes (including on restart)
   useEffect(() => {
     console.log('Game state updated in OnlineBoard, squares:', gameState.squares);
+    
+    // Check for restart notification
+    if (gameState.restartedBy && gameState.restartedBy !== gameState.role) {
+      setShowRestartNotification(true);
+      // Hide the notification after 5 seconds
+      const timer = setTimeout(() => {
+        setShowRestartNotification(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
     
     // Reset local state when gameState changes
     const result = calculateWinnerWithLine(gameState.squares);
@@ -96,7 +107,7 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   // Debug
   console.log('Player role:', playerRole);
   
-  // Render game result message with restart button
+  // Render game result message with rematch button
   const renderGameResult = () => {
     if (winner || isDraw) {
       const isUserWinner = winner === gameState.role;
@@ -116,26 +127,13 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
           
           <button 
             onClick={(e) => {
-              console.log("Play Again button direct click handler");
-              // Call the handler but also do direct debugging
+              console.log("Rematch button clicked");
               handleRestartRequest(e);
-              
-              // Direct debugging - call onRequestRestart directly if it exists
-              if (onRequestRestart) {
-                console.log("Directly calling onRequestRestart from button click");
-                try {
-                  onRequestRestart();
-                } catch (error) {
-                  console.error("Error directly calling restart:", error);
-                }
-              } else {
-                console.error("onRequestRestart is not available");
-              }
             }}
-            className="px-6 py-3 rounded-md transition-colors bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-md"
-            data-testid="play-again-button"
+            className="px-8 py-3 rounded-md transition-colors bg-primary hover:bg-opacity-90 text-white font-bold text-lg shadow-md"
+            data-testid="rematch-button"
           >
-            PLAY AGAIN
+            REMATCH
           </button>
         </div>
       );
@@ -144,8 +142,22 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
     return null;
   };
   
+  // Render restart notification
+  const renderRestartNotification = () => {
+    if (showRestartNotification) {
+      const opponent = gameState.restartedBy === 'X' ? 'X' : 'O';
+      return (
+        <div className="mt-4 mb-2 p-3 bg-blue-100 dark:bg-blue-900 dark:bg-opacity-20 text-blue-800 dark:text-blue-200 rounded-md text-center animate-pulse">
+          <p>Player {opponent} has restarted the game!</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="responsive-board">
+      {renderRestartNotification()}
       <div className="grid grid-cols-3 gap-1 max-w-fit mx-auto bg-board dark:bg-gray-800 p-3 rounded-lg shadow-md">
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => renderSquare(i))}
       </div>

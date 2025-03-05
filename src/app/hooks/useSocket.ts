@@ -22,6 +22,7 @@ export interface OnlineGameState {
     X?: boolean;
     O?: boolean;
   };
+  restartedBy?: 'X' | 'O';
 }
 
 // Create a single socket instance to be reused across the app
@@ -238,7 +239,8 @@ export default function useSocket(gameId?: string) {
             opponentConnected: true, // Keep both players connected
             createdAt: data.createdAt || prev.createdAt,
             lastUpdated: Date.now(),
-            restartRequested: { X: false, O: false }
+            restartRequested: { X: false, O: false },
+            restartedBy: data.restartedBy // Keep track of who restarted
           };
           
           console.log('New game state after restart:', newState);

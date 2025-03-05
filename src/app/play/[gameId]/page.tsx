@@ -254,8 +254,8 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <OnlineBoard 
           gameState={gameState}
           onSquareClick={makeMove}
-          onRequestRestart={function playAgainHandler() {
-            console.log("playAgainHandler called, gameId:", gameId);
+          onRequestRestart={() => {
+            console.log("Rematch requested, gameId:", gameId);
             
             if (!requestRestart) {
               console.error("requestRestart function is not available!");
@@ -264,11 +264,10 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
             
             // Try/catch to catch any possible errors
             try {
-              console.log("Calling requestRestart function");
               requestRestart();
-              console.log("requestRestart function completed");
+              console.log("Rematch request sent successfully");
             } catch (error) {
-              console.error("Error in requestRestart:", error);
+              console.error("Error requesting rematch:", error);
             }
           }}
         />

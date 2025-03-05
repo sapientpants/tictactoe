@@ -13,6 +13,11 @@ export interface GameState {
   currentTurn: 'X' | 'O';
   createdAt: number;
   lastUpdated?: number;
+  restartRequested?: {
+    X: boolean;
+    O: boolean;
+  };
+  restartedBy?: 'X' | 'O';
 }
 
 export interface Games {
@@ -88,6 +93,7 @@ export default function initSocketServer(server: NetServer) {
         players: { X: socket.id, O: null },
         currentTurn: 'X',
         createdAt: Date.now(),
+        restartRequested: { X: false, O: false }
       };
       
       socket.join(gameId);
@@ -242,6 +248,7 @@ export default function initSocketServer(server: NetServer) {
       game.squares = Array(9).fill(null);
       game.currentTurn = 'X'; // X always starts
       game.lastUpdated = Date.now();
+      game.restartedBy = playerRole;
       
       // Clear any existing restart requests 
       if (game.restartRequested) {
@@ -297,7 +304,7 @@ export default function initSocketServer(server: NetServer) {
       }
       
       // Determine player role
-      let playerRole = null;
+      let playerRole: 'X' | 'O' | null = null;
       if (game.players.X === socket.id) {
         playerRole = 'X';
       } else if (game.players.O === socket.id) {
@@ -322,7 +329,9 @@ export default function initSocketServer(server: NetServer) {
       });
       
       // Optionally remove the player from the game
-      game.players[playerRole] = null;
+      if (playerRole === 'X' || playerRole === 'O') {
+        game.players[playerRole] = null;
+      }
       
       console.log(`Player ${playerRole} has left game ${gameId}`);
     });
