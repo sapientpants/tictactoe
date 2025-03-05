@@ -21,12 +21,12 @@ export default function Game() {
   const [history, setHistory] = useState<GameHistory[]>([]);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [scores, setScores] = useState<{ X: number; O: number; draws: number }>({ X: 0, O: 0, draws: 0 });
-  const [playerNames, setPlayerNames] = useState<{ X: string; O: string }>({ X: 'Player X', O: 'Player O' });
+  const [playerNames, setPlayerNames] = useState<{ X: string; O: string }>({ X: 'You', O: `AI (${AIDifficulty.MEDIUM})` });
   const [gameComplete, setGameComplete] = useState<boolean>(false);
   const [lastMove, setLastMove] = useState<number | null>(null);
   
-  // Game mode settings
-  const [gameMode, setGameMode] = useState<'local' | 'ai'>('local');
+  // Game mode settings - make AI the default mode
+  const [gameMode, setGameMode] = useState<'local' | 'ai'>('ai');
   const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>(AIDifficulty.MEDIUM);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   
@@ -164,13 +164,13 @@ export default function Game() {
   return (
     <ThemeProvider>
       <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-4">Tic Tac Toe</h1>
+        <h1 className="text-3xl font-bold mb-4">Tic Tac Toe vs AI</h1>
         
         <button
           onClick={() => setShowSettings(!showSettings)}
           className="mb-6 px-4 py-2 bg-accent text-white rounded-full hover:bg-opacity-90 transition-colors"
         >
-          {showSettings ? 'Hide Settings' : 'Show Settings'}
+          {showSettings ? 'Hide Settings' : 'Game Settings'}
         </button>
         
         {/* Settings Panel */}

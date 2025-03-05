@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 export type GameRole = 'X' | 'O' | 'spectator';
@@ -20,83 +20,132 @@ export interface OnlineGameState {
   lastUpdated?: number;
 }
 
+// Create a single socket instance to be reused across the app
+let socketInstance: Socket | null = null;
+
 export default function useSocket(gameId?: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<OnlineGameState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [initializing, setInitializing] = useState(false);
   
-  const socketInitialized = useRef(false);
-  
-  // Initialize socket connection
+  // Initialize socket connection or reuse existing connection
   useEffect(() => {
-    if (socketInitialized.current) return;
-    
-    socketInitialized.current = true;
-    setIsLoading(true);
-    
-    // First fetch the socket endpoint to initialize the server
-    console.log('Initializing socket.io server...');
-    fetch('/api/socketio')
-      .then(() => console.log('Socket.io server initialized via fetch'))
-      .catch(err => console.error('Could not initialize socket.io server:', err));
+    const connectToSocket = async () => {
+      setIsLoading(true);
+      setError(null);
       
-    // Then create the socket connection with specific options for reliable connection
-    console.log('Creating socket connection...');
-    const socketInstance = io({
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 1000,
-      timeout: 20000
-    });
-    
-    socketInstance.on('connect', () => {
-      console.log('Socket connected');
-      setSocket(socketInstance);
-      setIsConnected(true);
-      
-      if (gameId) {
-        // Join existing game if gameId is provided
-        socketInstance.emit('joinGame', { gameId });
+      try {
+        // If we already have a socket instance, use it
+        if (socketInstance && socketInstance.connected) {
+          console.log('Reusing existing socket connection');
+          setSocket(socketInstance);
+          setIsConnected(true);
+          
+          if (gameId) {
+            console.log('Joining game with existing socket:', gameId);
+            socketInstance.emit('joinGame', { gameId });
+          }
+          
+          setupSocketListeners(socketInstance);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Check server status first
+        if (!initializing) {
+          setInitializing(true);
+          console.log('Checking socket.io server status...');
+          
+          try {
+            const response = await fetch('/api/socket');
+            const data = await response.json();
+            console.log('Socket server status:', data.status);
+          } catch (err) {
+            console.warn('Socket status check failed, will try direct connection:', err);
+          }
+        }
+        
+        // Create new socket connection
+        console.log('Creating new socket connection...');
+        const newSocket = io({
+          transports: ['polling', 'websocket'],
+          reconnectionAttempts: 10,
+          reconnectionDelay: 1000,
+          timeout: 20000
+        });
+        
+        socketInstance = newSocket;
+        
+        newSocket.on('connect', () => {
+          console.log('Socket connected with ID:', newSocket.id);
+          setSocket(newSocket);
+          setIsConnected(true);
+          
+          // If we have a gameId, join the game
+          if (gameId) {
+            console.log('Joining game with new socket:', gameId);
+            newSocket.emit('joinGame', { gameId });
+          }
+          
+          setIsLoading(false);
+          setInitializing(false);
+        });
+        
+        newSocket.on('disconnect', () => {
+          console.log('Socket disconnected');
+          setIsConnected(false);
+        });
+        
+        newSocket.on('connect_error', (err) => {
+          console.error('Socket connection error:', err);
+          setError('Failed to connect to game server: ' + err.message);
+          setIsLoading(false);
+          setInitializing(false);
+        });
+        
+        // Set up socket event listeners
+        setupSocketListeners(newSocket);
+      } catch (err) {
+        console.error('Error initializing socket:', err);
+        setError('Failed to initialize game connection');
+        setIsLoading(false);
+        setInitializing(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
     
-    socketInstance.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setIsConnected(false);
-    });
+    connectToSocket();
     
-    socketInstance.on('connect_error', (err) => {
-      console.error('Socket connection error:', err);
-      setError('Failed to connect to game server: ' + err.message);
-      setIsLoading(false);
-    });
-    
-    // Add more detailed error logging
-    socketInstance.on('error', (err) => {
-      console.error('Socket error:', err);
-    });
-    
+    // Cleanup function
     return () => {
-      socketInstance.disconnect();
+      // We don't disconnect the socket when unmounting
+      // to allow it to be reused across the app
+      // The socket will be automatically disconnected when the page is closed
     };
   }, [gameId]);
   
-  // Set up event handlers once socket is connected
-  useEffect(() => {
-    if (!socket) return;
+  // Set up event handlers for socket
+  const setupSocketListeners = (socket: Socket) => {
+    // Remove existing listeners to avoid duplicates
+    socket.off('gameCreated');
+    socket.off('gameJoined');
+    socket.off('opponentJoined');
+    socket.off('gameUpdated');
+    socket.off('playerDisconnected');
+    socket.off('error');
     
     // Handle game creation
     socket.on('gameCreated', (data) => {
       console.log('Game created:', data);
       setGameState({
-        ...data,
+        id: data.gameId,
         squares: Array(9).fill(null),
         players: { X: socket.id, O: null },
         currentTurn: 'X',
+        role: 'X',
+        shareUrl: data.shareUrl,
         createdAt: Date.now(),
         opponentConnected: false,
       });
@@ -107,7 +156,8 @@ export default function useSocket(gameId?: string) {
       console.log('Game joined:', data);
       setGameState({
         ...data,
-        opponentConnected: true,
+        role: data.role,
+        opponentConnected: data.players.X && data.players.O,
       });
     });
     
@@ -153,16 +203,7 @@ export default function useSocket(gameId?: string) {
       console.error('Socket error:', data);
       setError(data.message);
     });
-    
-    return () => {
-      socket.off('gameCreated');
-      socket.off('gameJoined');
-      socket.off('opponentJoined');
-      socket.off('gameUpdated');
-      socket.off('playerDisconnected');
-      socket.off('error');
-    };
-  }, [socket]);
+  };
   
   // Create new game
   const createGame = useCallback(() => {
@@ -170,39 +211,30 @@ export default function useSocket(gameId?: string) {
       console.error("Cannot create game: Socket not connected");
       return;
     }
+    
     console.log("Emitting createGame event");
-    
-    // Direct call without waiting for acknowledgment
     socket.emit('createGame');
-    
-    // Fallback: create game manually if no response within 2 seconds
-    setTimeout(() => {
-      if (!gameState) {
-        console.log("No game created after timeout, creating manually");
-        const mockGameId = `manual-${Date.now()}`;
-        setGameState({
-          id: mockGameId,
-          squares: Array(9).fill(null),
-          players: { X: 'client', O: null },
-          currentTurn: 'X',
-          role: 'X',
-          createdAt: Date.now(),
-          shareUrl: `${window.location.origin}/play/${mockGameId}`,
-          opponentConnected: false
-        });
-      }
-    }, 2000);
-  }, [socket, gameState]);
+  }, [socket]);
   
   // Join existing game
   const joinGame = useCallback((id: string) => {
-    if (!socket) return;
+    if (!socket) {
+      console.error("Cannot join game: Socket not connected");
+      return;
+    }
+    
+    console.log("Joining game:", id);
     socket.emit('joinGame', { gameId: id });
   }, [socket]);
   
   // Make a move
   const makeMove = useCallback((index: number) => {
-    if (!socket || !gameState) return;
+    if (!socket || !gameState) {
+      console.error("Cannot make move: Socket not connected or game state missing");
+      return;
+    }
+    
+    console.log("Making move at index:", index, "in game:", gameState.id);
     socket.emit('makeMove', { gameId: gameState.id, index });
   }, [socket, gameState]);
   

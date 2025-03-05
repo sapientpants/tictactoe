@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "ts-node --project tsconfig.server.json server.ts",
+    "dev:next": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
+    "build:server": "tsc --project tsconfig.server.json",
+    "start": "NODE_ENV=production node dist/server.js",
+    "start:next": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -32,6 +35,7 @@
     "eslint-config-next": "15.2.1",
     "jsdom": "^26.0.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.1",
     "typescript": "^5",
     "vitest": "^3.0.7"
   }

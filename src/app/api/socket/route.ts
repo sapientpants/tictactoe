@@ -1,191 +1,30 @@
-import { Server as NetServer } from 'http';
 import { NextRequest, NextResponse } from 'next/server';
-import { Server as SocketIOServer } from 'socket.io';
-import { v4 as uuidv4 } from 'uuid';
+import { getSocketServer, getGames } from '../../../lib/socket';
 
-// Types for game state
-interface GameState {
-  id: string;
-  squares: (string | null)[];
-  players: {
-    X: string | null;
-    O: string | null;
-  };
-  currentTurn: 'X' | 'O';
-  createdAt: number;
-  lastUpdated?: number;
-}
+// Force this route to be dynamic and run on Node.js
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-interface Games {
-  [key: string]: GameState;
-}
-
-// In-memory store for games
-const games: Games = {};
-
-// Function to clean up old games (run periodically)
-function cleanupOldGames() {
-  const now = Date.now();
-  const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
-  
-  Object.keys(games).forEach(gameId => {
-    if (now - games[gameId].createdAt > MAX_AGE) {
-      delete games[gameId];
-    }
-  });
-}
-
-// Socket.io server instance
-let io: SocketIOServer;
-
-// Helper function to log Socket.io events
-function logIoEvent(event: string, data?: any) {
-  console.log(`Socket.io Event [${event}]:`, data);
-}
-
+/**
+ * API route to check socket server status and game information
+ */
 export async function GET(req: NextRequest) {
-  // Return a plain response early to avoid connection issues
-  console.log("Socket.io API route hit");
-  try {
-    if (!io) {
-      // Create Socket.io server if it doesn't exist
-      const res = new NextResponse();
-      
-      // Log if res.socket is available
-      if (!res.socket) {
-        console.error("Socket not available on NextResponse");
-        return NextResponse.json({ error: "Socket initialization failed" }, { status: 500 });
-      }
-      
-      const httpServer = res.socket?.server as unknown as NetServer;
-      
-      io = new SocketIOServer(httpServer);
-    
-    // Set up Socket.io connection handler
-    io.on('connection', (socket) => {
-      console.log('Socket connected:', socket.id);
-      
-      // Handle new game creation
-      socket.on('createGame', () => {
-        const gameId = uuidv4();
-        games[gameId] = {
-          id: gameId,
-          squares: Array(9).fill(null),
-          players: { X: socket.id, O: null },
-          currentTurn: 'X',
-          createdAt: Date.now(),
-        };
-        
-        socket.join(gameId);
-        socket.emit('gameCreated', {
-          gameId,
-          shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/play/${gameId}`,
-          role: 'X',
-        });
-        
-        console.log(`Game created: ${gameId}`);
-      });
-      
-      // Handle joining a game
-      socket.on('joinGame', ({ gameId }) => {
-        const game = games[gameId];
-        
-        if (!game) {
-          return socket.emit('error', { message: 'Game not found' });
-        }
-        
-        // Check if this is a reconnection
-        if (game.players.X === socket.id || game.players.O === socket.id) {
-          socket.join(gameId);
-          return socket.emit('gameJoined', {
-            ...game,
-            role: game.players.X === socket.id ? 'X' : 'O',
-          });
-        }
-        
-        // Check if the game is full
-        if (game.players.X && game.players.O) {
-          return socket.emit('error', { message: 'Game is full' });
-        }
-        
-        // Join as player O if not already filled
-        game.players.O = socket.id;
-        socket.join(gameId);
-        
-        socket.emit('gameJoined', {
-          ...game,
-          role: 'O',
-        });
-        
-        // Notify the other player
-        io.to(gameId).emit('opponentJoined', {
-          ...game,
-        });
-        
-        console.log(`Player joined game: ${gameId}`);
-      });
-      
-      // Handle a player's move
-      socket.on('makeMove', ({ gameId, index }) => {
-        const game = games[gameId];
-        
-        if (!game) {
-          return socket.emit('error', { message: 'Game not found' });
-        }
-        
-        // Determine player's role
-        let role: 'X' | 'O' | null = null;
-        if (game.players.X === socket.id) role = 'X';
-        if (game.players.O === socket.id) role = 'O';
-        
-        if (!role) {
-          return socket.emit('error', { message: 'You are not a player in this game' });
-        }
-        
-        // Check if it's the player's turn
-        if (game.currentTurn !== role) {
-          return socket.emit('error', { message: 'Not your turn' });
-        }
-        
-        // Check if the move is valid
-        if (index < 0 || index > 8 || game.squares[index] !== null) {
-          return socket.emit('error', { message: 'Invalid move' });
-        }
-        
-        // Update game state
-        game.squares[index] = role;
-        game.currentTurn = role === 'X' ? 'O' : 'X';
-        game.lastUpdated = Date.now();
-        
-        // Send updated game state to all players
-        io.to(gameId).emit('gameUpdated', game);
-        
-        console.log(`Move made in game ${gameId} by ${role} at position ${index}`);
-      });
-      
-      // Handle disconnections
-      socket.on('disconnect', () => {
-        console.log('Socket disconnected:', socket.id);
-        
-        // Find any games this player was in
-        Object.keys(games).forEach(gameId => {
-          const game = games[gameId];
-          
-          if (game.players.X === socket.id) {
-            io.to(gameId).emit('playerDisconnected', { player: 'X' });
-          } else if (game.players.O === socket.id) {
-            io.to(gameId).emit('playerDisconnected', { player: 'O' });
-          }
-        });
-      });
-    });
-    
-    // Set up periodic cleanup
-    setInterval(cleanupOldGames, 3600000); // Run every hour
-  } catch (error) {
-    console.error("Socket.io initialization error:", error);
-    return NextResponse.json({ error: "Socket server error" }, { status: 500 });
+  console.log("Socket.io API endpoint hit");
+  
+  const io = getSocketServer();
+  const games = getGames();
+  
+  if (!io) {
+    console.warn("Socket.io server not initialized - this is normal during initialization");
+    return NextResponse.json({
+      status: "initializing",
+      message: "Socket.io server is being initialized. Please wait and retry your connection."
+    }, { status: 200 });
   }
   
-  return new NextResponse('Socket.io server running');
+  return NextResponse.json({
+    status: "running",
+    message: "Socket.io server is running",
+    gameCount: Object.keys(games).length
+  }, { status: 200 });
 }

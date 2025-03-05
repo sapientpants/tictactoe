@@ -1,34 +1,32 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useSocket from '../../hooks/useSocket';
 import { ThemeProvider } from '../../context/ThemeContext';
 import OnlineBoard from '../../components/OnlineBoard';
+import { useRouter } from 'next/navigation';
 
 export default function GamePage({ params }: { params: { gameId: string } }) {
   const { gameId } = params;
-  // Handle both real and fallback game IDs
-  const isManualGame = gameId.startsWith('manual-');
-  const { gameState: socketGameState, error, isLoading, makeMove } = useSocket(isManualGame ? undefined : gameId);
-  
-  // Create a manual game state if needed
-  const [manualGameState, setManualGameState] = useState(
-    isManualGame ? {
-      id: gameId,
-      squares: Array(9).fill(null),
-      players: { X: 'client', O: null },
-      currentTurn: 'X',
-      role: 'X' as const,
-      createdAt: Date.now(),
-      shareUrl: window.location.href,
-      opponentConnected: false
-    } : null
-  );
-  
-  // Use either the socket game state or manual game state
-  const gameState = socketGameState || manualGameState;
+  const router = useRouter();
+  const { gameState, error, isLoading, isConnected, makeMove } = useSocket(gameId);
   const [copied, setCopied] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  
+  // Retry connection if needed
+  useEffect(() => {
+    if (!isConnected && !isLoading && connectionAttempts < 3) {
+      const timer = setTimeout(() => {
+        console.log(`Retrying connection (attempt ${connectionAttempts + 1})...`);
+        setConnectionAttempts(prev => prev + 1);
+        // Force a reload of the component to retry connection
+        router.refresh();
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, isLoading, connectionAttempts, router]);
 
   // Function to copy the invite link
   const copyInviteLink = () => {
@@ -36,6 +34,13 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+  
+  // Handle manual reload attempt
+  const handleRetryConnection = () => {
+    console.log("Manual retry connection");
+    setConnectionAttempts(0);
+    router.refresh();
   };
 
   if (isLoading) {
@@ -46,25 +51,68 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
             <p>Connecting to the game...</p>
+            {connectionAttempts > 0 && (
+              <p className="text-sm text-gray-500 mt-2">
+                Connection attempt {connectionAttempts + 1}/4
+              </p>
+            )}
           </div>
         </div>
       </ThemeProvider>
     );
   }
 
+  // Show connection error after several attempts
+  if (!isConnected && connectionAttempts >= 3) {
+    return (
+      <ThemeProvider>
+        <div className="flex flex-col items-center max-w-lg mx-auto p-6">
+          <h1 className="text-3xl font-bold mb-8">Connection Error</h1>
+          <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
+            <div className="text-red-500 p-4 rounded-md bg-red-100 dark:bg-red-900 dark:bg-opacity-20">
+              <h3 className="font-bold">Unable to Connect to Game Server</h3>
+              <p>Could not establish a connection to the game server after multiple attempts.</p>
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={handleRetryConnection}
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors"
+                >
+                  Try Again
+                </button>
+                <Link
+                  href="/play"
+                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
+                >
+                  Back to Menu
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ThemeProvider>
+    );
+  }
+
+  // Show specific error from socket
   if (error) {
     return (
       <ThemeProvider>
         <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Error</h1>
+          <h1 className="text-3xl font-bold mb-8">Game Error</h1>
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
             <div className="text-red-500 p-4 rounded-md bg-red-100 dark:bg-red-900 dark:bg-opacity-20">
               <h3 className="font-bold">Unable to Join Game</h3>
               <p>{error}</p>
-              <div className="mt-4">
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={handleRetryConnection}
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors"
+                >
+                  Try Again
+                </button>
                 <Link
                   href="/play"
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors"
+                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
                 >
                   Back to Play Menu
                 </Link>
@@ -76,6 +124,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     );
   }
 
+  // Game not found or not initialized yet
   if (!gameState) {
     return (
       <ThemeProvider>
@@ -83,12 +132,20 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           <h1 className="text-3xl font-bold mb-8">Game Not Found</h1>
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
             <p className="mb-4">The game you're looking for doesn't exist or has expired.</p>
-            <Link
-              href="/play"
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors"
-            >
-              Back to Play Menu
-            </Link>
+            <div className="flex gap-3">
+              <button
+                onClick={handleRetryConnection}
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-opacity-90 transition-colors"
+              >
+                Try Again
+              </button>
+              <Link
+                href="/play"
+                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
+              >
+                Back to Menu
+              </Link>
+            </div>
           </div>
         </div>
       </ThemeProvider>
@@ -160,24 +217,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         
         <OnlineBoard 
           gameState={gameState}
-          onSquareClick={isManualGame ? 
-            ((index) => {
-              if (!manualGameState) return;
-              
-              // Return early if square already filled or game is over
-              if (manualGameState.squares[index]) return;
-              
-              // Make a copy of the squares array
-              const newSquares = [...manualGameState.squares];
-              newSquares[index] = manualGameState.role;
-              
-              setManualGameState({
-                ...manualGameState,
-                squares: newSquares,
-                currentTurn: manualGameState.currentTurn === 'X' ? 'O' : 'X'
-              });
-            }) 
-            : makeMove}
+          onSquareClick={makeMove}
         />
         
         <div className="mt-6 flex gap-4">
