@@ -14,6 +14,9 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   
   const router = useRouter();
   const { gameState, error, isLoading, isConnected, makeMove, requestRestart } = useSocket(gameId);
+  
+  // For debugging
+  console.log("GameId page mounted with requestRestart function available:", !!requestRestart);
   const [copied, setCopied] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   
@@ -221,7 +224,14 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <OnlineBoard 
           gameState={gameState}
           onSquareClick={makeMove}
-          onRequestRestart={requestRestart}
+          onRequestRestart={() => {
+            console.log("Restart callback called from OnlineBoard");
+            if (requestRestart) {
+              requestRestart();
+            } else {
+              console.error("requestRestart is undefined");
+            }
+          }}
         />
         
         <div className="mt-6 flex gap-4">

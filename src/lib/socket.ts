@@ -225,16 +225,27 @@ export default function initSocketServer(server: NetServer) {
       game.currentTurn = 'X'; // X always starts
       game.lastUpdated = Date.now();
       
-      // Reset restart requested state (in case it was previously used)
-      game.restartRequested = { X: false, O: false };
+      // Clear any existing restart requests
+      if (game.restartRequested) {
+        game.restartRequested = { X: false, O: false };
+      }
       
-      // Notify all players of restart
-      io?.to(gameId).emit('gameRestarted', {
-        ...game,
-        restartedBy: playerRole
-      });
-      
-      console.log(`Game ${gameId} has been restarted by player ${playerRole}`);
+      try {
+        // Notify all players of the restart - send a complete game state to ensure clients have correct data
+        io?.to(gameId).emit('gameRestarted', {
+          id: game.id,
+          squares: game.squares,
+          players: game.players,
+          currentTurn: game.currentTurn,
+          createdAt: game.createdAt,
+          lastUpdated: game.lastUpdated,
+          restartedBy: playerRole
+        });
+        
+        console.log(`Game ${gameId} has been restarted by player ${playerRole}`);
+      } catch (error) {
+        console.error('Error sending gameRestarted event:', error);
+      }
     });
     
     // Handle disconnections

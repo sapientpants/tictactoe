@@ -214,13 +214,19 @@ export default function useSocket(gameId?: string) {
       setGameState(prev => {
         if (!prev) return null;
         
-        console.log('Resetting game state to new game');
+        console.log('Resetting game state to new game with data:', data);
         
+        // Create a completely new game state to ensure all fields are properly reset
         return {
-          ...prev,
-          ...data,
-          squares: Array(9).fill(null),
+          id: data.id,
+          squares: Array(9).fill(null), // Ensure squares are reset
+          players: data.players,
           currentTurn: 'X',
+          role: prev.role, // Keep the player's role
+          shareUrl: prev.shareUrl,
+          opponentConnected: true, // Keep both players connected
+          createdAt: data.createdAt,
+          lastUpdated: data.lastUpdated,
           restartRequested: { X: false, O: false }
         };
       });

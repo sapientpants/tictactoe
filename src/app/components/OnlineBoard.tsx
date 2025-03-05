@@ -56,8 +56,14 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   };
   
   // Request to restart the game
-  const handleRestartRequest = () => {
-    console.log('Restart button clicked, calling onRequestRestart');
+  const handleRestartRequest = (e: React.MouseEvent) => {
+    // Prevent default to ensure the event is captured
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Play Again button clicked, calling onRequestRestart');
+    
+    // Check if the restart function is available
     if (onRequestRestart) {
       onRequestRestart();
     } else {
@@ -110,7 +116,8 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
           
           <button 
             onClick={handleRestartRequest}
-            className="px-4 py-2 rounded-md transition-colors bg-primary text-white hover:bg-opacity-90"
+            className="px-4 py-2 rounded-md transition-colors bg-primary text-white hover:bg-opacity-90 font-bold"
+            data-testid="play-again-button"
           >
             Play Again
           </button>
