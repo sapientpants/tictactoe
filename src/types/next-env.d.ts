@@ -1,7 +1,4 @@
 // This file provides custom type declarations for Next.js
-// We disable this rule for the whole file because it's a type definition file
-// where 'unknown' would be more restrictive than needed
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 declare module 'next' {
   // Define the Next.js application API
