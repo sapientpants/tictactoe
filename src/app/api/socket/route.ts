@@ -1,5 +1,5 @@
 import { Server as NetServer } from 'http';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { Server as SocketIOServer } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -41,11 +41,11 @@ let io: SocketIOServer;
 export async function GET(req: NextRequest) {
   if (!io) {
     // Create Socket.io server if it doesn't exist
-    const res = new Response(null);
+    const res = new NextResponse();
     const httpServer = res.socket?.server as unknown as NetServer;
     
     io = new SocketIOServer(httpServer, {
-      path: '/api/socket/io',
+      path: '/api/socket',
       addTrailingSlash: false,
     });
     

@@ -37,7 +37,7 @@ export default function useSocket(gameId?: string) {
     setIsLoading(true);
     
     const socketInstance = io({
-      path: '/api/socket/io',
+      path: '/api/socket',
       addTrailingSlash: false,
     });
     
