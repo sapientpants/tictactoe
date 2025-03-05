@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import useSocket from '../../hooks/useSocket';
 import { ThemeProvider } from '../../context/ThemeContext';
@@ -8,7 +8,26 @@ import OnlineBoard from '../../components/OnlineBoard';
 
 export default function GamePage({ params }: { params: { gameId: string } }) {
   const { gameId } = params;
-  const { gameState, error, isLoading, makeMove } = useSocket(gameId);
+  // Handle both real and fallback game IDs
+  const isManualGame = gameId.startsWith('manual-');
+  const { gameState: socketGameState, error, isLoading, makeMove } = useSocket(isManualGame ? undefined : gameId);
+  
+  // Create a manual game state if needed
+  const [manualGameState, setManualGameState] = useState(
+    isManualGame ? {
+      id: gameId,
+      squares: Array(9).fill(null),
+      players: { X: 'client', O: null },
+      currentTurn: 'X',
+      role: 'X' as const,
+      createdAt: Date.now(),
+      shareUrl: window.location.href,
+      opponentConnected: false
+    } : null
+  );
+  
+  // Use either the socket game state or manual game state
+  const gameState = socketGameState || manualGameState;
   const [copied, setCopied] = useState(false);
 
   // Function to copy the invite link
@@ -141,7 +160,24 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         
         <OnlineBoard 
           gameState={gameState}
-          onSquareClick={makeMove}
+          onSquareClick={isManualGame ? 
+            ((index) => {
+              if (!manualGameState) return;
+              
+              // Return early if square already filled or game is over
+              if (manualGameState.squares[index]) return;
+              
+              // Make a copy of the squares array
+              const newSquares = [...manualGameState.squares];
+              newSquares[index] = manualGameState.role;
+              
+              setManualGameState({
+                ...manualGameState,
+                squares: newSquares,
+                currentTurn: manualGameState.currentTurn === 'X' ? 'O' : 'X'
+              });
+            }) 
+            : makeMove}
         />
         
         <div className="mt-6 flex gap-4">

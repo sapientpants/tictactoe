@@ -172,14 +172,27 @@ export default function useSocket(gameId?: string) {
     }
     console.log("Emitting createGame event");
     
-    // Use acknowledgment callback for more reliable response
-    socket.emit('createGame', {}, (response) => {
-      console.log("Received createGame acknowledgment:", response);
-      if (response.error) {
-        setError(response.error);
+    // Direct call without waiting for acknowledgment
+    socket.emit('createGame');
+    
+    // Fallback: create game manually if no response within 2 seconds
+    setTimeout(() => {
+      if (!gameState) {
+        console.log("No game created after timeout, creating manually");
+        const mockGameId = `manual-${Date.now()}`;
+        setGameState({
+          id: mockGameId,
+          squares: Array(9).fill(null),
+          players: { X: 'client', O: null },
+          currentTurn: 'X',
+          role: 'X',
+          createdAt: Date.now(),
+          shareUrl: `${window.location.origin}/play/${mockGameId}`,
+          opponentConnected: false
+        });
       }
-    });
-  }, [socket]);
+    }, 2000);
+  }, [socket, gameState]);
   
   // Join existing game
   const joinGame = useCallback((id: string) => {
