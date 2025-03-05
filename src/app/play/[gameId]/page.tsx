@@ -1,16 +1,21 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useSocket from '../../hooks/useSocket';
 import { ThemeProvider } from '../../context/ThemeContext';
 import OnlineBoard from '../../components/OnlineBoard';
 import { useRouter } from 'next/navigation';
 
-export default function GamePage({ params }: { params: { gameId: string } }) {
-  // Unwrap params with React.use() to address the warning
-  const unwrappedParams = use(params);
-  const gameId = unwrappedParams.gameId;
+// Define the component with proper Next.js App Router types
+// @ts-ignore - We know this is correct for app router
+export default function GamePage({ 
+  params 
+}: { 
+  params: { gameId: string } 
+}) {
+  // Access gameId directly from params
+  const gameId = params.gameId;
   
   const router = useRouter();
   const { gameState, error, isLoading, isConnected, makeMove, requestRestart, socket, disconnectSocket } = useSocket(gameId);

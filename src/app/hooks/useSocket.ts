@@ -13,8 +13,8 @@ export interface OnlineGameState {
     O: string | null;
   };
   currentTurn: 'X' | 'O';
-  role?: GameRole;
-  shareUrl?: string;
+  role?: GameRole | null;
+  shareUrl?: string | null;
   opponentConnected?: boolean;
   createdAt: number;
   lastUpdated?: number;
@@ -163,15 +163,15 @@ export default function useSocket(gameId?: string) {
     socket.off('error');
     
     // Handle game creation
-    socket.on('gameCreated', (data) => {
+    socket.on('gameCreated', (data: { gameId: string; shareUrl?: string }) => {
       console.log('Game created:', data);
       setGameState({
         id: data.gameId,
         squares: Array(9).fill(null),
-        players: { X: socket.id, O: null },
+        players: { X: socket.id as string, O: null },
         currentTurn: 'X',
         role: 'X',
-        shareUrl: data.shareUrl,
+        shareUrl: data.shareUrl || null,
         createdAt: Date.now(),
         opponentConnected: false,
         restartRequested: { X: false, O: false },
