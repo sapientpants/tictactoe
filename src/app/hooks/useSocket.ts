@@ -208,12 +208,16 @@ export default function useSocket(gameId?: string) {
     // Handle restart requests
     socket.on('restartRequested', (data) => {
       console.log('Restart requested:', data);
+      // Ensure we have a valid restartRequested object
       setGameState(prev => {
         if (!prev) return null;
+        // Initialize restart requested if it doesn't exist
+        const currentRestartRequested = prev.restartRequested || { X: false, O: false };
+        console.log('Current restart state:', currentRestartRequested, 'Setting', data.requestedBy, 'to true');
         return {
           ...prev,
           restartRequested: {
-            ...prev.restartRequested,
+            ...currentRestartRequested,
             [data.requestedBy]: true
           }
         };
@@ -222,9 +226,14 @@ export default function useSocket(gameId?: string) {
     
     // Handle game restart
     socket.on('gameRestarted', (data) => {
-      console.log('Game restarted:', data);
+      console.log('Game restarted event received:', data);
+      
+      // Reset the game state
       setGameState(prev => {
         if (!prev) return null;
+        
+        console.log('Resetting game state to new game');
+        
         return {
           ...prev,
           ...data,
@@ -282,7 +291,30 @@ export default function useSocket(gameId?: string) {
       return;
     }
     
-    console.log("Requesting game restart for game:", gameState.id);
+    console.log("Requesting game restart for game:", gameState.id, "as player:", gameState.role);
+    
+    // Update local state immediately for better UI feedback
+    setGameState(prev => {
+      if (!prev) return null;
+      
+      const currentRestartRequested = prev.restartRequested || { X: false, O: false };
+      const playerRole = prev.role || 'X';
+      
+      console.log("Updating local restart state:", {
+        ...currentRestartRequested,
+        [playerRole]: true
+      });
+      
+      return {
+        ...prev,
+        restartRequested: {
+          ...currentRestartRequested,
+          [playerRole]: true
+        }
+      };
+    });
+    
+    // Send restart request to server
     socket.emit('restartGame', { gameId: gameState.id });
   }, [socket, gameState]);
 

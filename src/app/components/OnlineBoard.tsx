@@ -16,8 +16,11 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   const [winningLine, setWinningLine] = useState<number[] | null>(null);
   const [isDraw, setIsDraw] = useState(false);
   
-  // Check for winner or draw whenever the squares change
+  // Reset local game state when gameState changes (including on restart)
   useEffect(() => {
+    console.log('Game state updated in OnlineBoard, squares:', gameState.squares);
+    
+    // Reset local state when gameState changes
     const result = calculateWinnerWithLine(gameState.squares);
     
     if (result) {
@@ -30,7 +33,7 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
       setWinningLine(null);
       setIsDraw(false);
     }
-  }, [gameState.squares]);
+  }, [gameState]);
   
   // Handle square click
   const handleClick = (i: number) => {
@@ -54,8 +57,11 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   
   // Request to restart the game
   const handleRestartRequest = () => {
+    console.log('Restart button clicked, calling onRequestRestart');
     if (onRequestRestart) {
       onRequestRestart();
+    } else {
+      console.error('onRequestRestart function is not provided');
     }
   };
   
@@ -79,8 +85,24 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   };
   
   // Check if this player or opponent has requested a restart
-  const hasRequestedRestart = gameState.restartRequested?.[gameState.role || 'X'];
-  const opponentRequestedRestart = gameState.restartRequested?.[gameState.role === 'X' ? 'O' : 'X'];
+  const playerRole = gameState.role || 'X';
+  const opponentRole = playerRole === 'X' ? 'O' : 'X';
+  
+  // Initialize restartRequested if it doesn't exist in gameState
+  const restartRequests = gameState.restartRequested || { X: false, O: false };
+  
+  // Check if player or opponent has requested restart
+  const hasRequestedRestart = !!restartRequests[playerRole];
+  const opponentRequestedRestart = !!restartRequests[opponentRole];
+  
+  // Debug
+  console.log('Restart state:', {
+    playerRole,
+    opponentRole,
+    restartRequests,
+    hasRequestedRestart,
+    opponentRequestedRestart
+  });
   
   // Render game result message with restart button
   const renderGameResult = () => {
