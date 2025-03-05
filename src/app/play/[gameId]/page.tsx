@@ -36,10 +36,16 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
 
   // Function to copy the invite link
   const copyInviteLink = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      console.log("Link copied to clipboard:", url);
+    } catch (e) {
+      console.error("Error copying link:", e);
+      alert("Could not copy link. Please copy it manually.");
+    }
   };
   
   // Handle manual reload attempt
@@ -213,7 +219,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           </Link>
         </div>
         
-        {gameState.role === 'X' && !gameState.opponentConnected && (
+        {!gameState.opponentConnected && (
           <div className="w-full bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
             <h2 className="font-bold text-lg text-yellow-800 dark:text-yellow-200 mb-2">Waiting for opponent</h2>
             <p className="mb-3 text-yellow-700 dark:text-yellow-300">Share this link with a friend to play:</p>
@@ -235,10 +241,15 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           </div>
         )}
         
-        {gameState.role === 'O' && (
+        {gameState.opponentConnected && (
           <div className="w-full bg-green-50 dark:bg-green-900 dark:bg-opacity-20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
             <p className="text-green-700 dark:text-green-300">
-              You've joined the game as Player O!
+              {gameState.role === 'X' 
+                ? "Player O has joined the game!" 
+                : "You've joined the game as Player O!"}
+            </p>
+            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+              Game is ready to play! {gameState.currentTurn === 'X' ? "X" : "O"} goes first.
             </p>
           </div>
         )}
