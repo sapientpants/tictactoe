@@ -210,26 +210,45 @@ export default function useSocket(gameId?: string) {
     socket.on('gameRestarted', (data) => {
       console.log('Game restarted event received:', data);
       
-      // Reset the game state
-      setGameState(prev => {
-        if (!prev) return null;
+      try {
+        // Validate the data
+        if (!data || !data.id) {
+          console.error('Invalid game state in gameRestarted event:', data);
+          return;
+        }
         
-        console.log('Resetting game state to new game with data:', data);
+        // Reset the game state with direct state update for more reliability
+        setGameState(prev => {
+          if (!prev) {
+            console.error('Previous game state is null in gameRestarted handler');
+            return null;
+          }
+          
+          const role = prev.role || 'X';
+          console.log(`Resetting game state for player ${role}`);
+          
+          // Important: Create a completely new object to ensure React detects the change
+          const newState: OnlineGameState = {
+            id: data.id,
+            squares: Array(9).fill(null), // Explicitly reset squares
+            players: data.players || prev.players,
+            currentTurn: 'X', // Always reset to X's turn
+            role: role, // Preserve player role
+            shareUrl: prev.shareUrl,
+            opponentConnected: true, // Keep both players connected
+            createdAt: data.createdAt || prev.createdAt,
+            lastUpdated: Date.now(),
+            restartRequested: { X: false, O: false }
+          };
+          
+          console.log('New game state after restart:', newState);
+          return newState;
+        });
         
-        // Create a completely new game state to ensure all fields are properly reset
-        return {
-          id: data.id,
-          squares: Array(9).fill(null), // Ensure squares are reset
-          players: data.players,
-          currentTurn: 'X',
-          role: prev.role, // Keep the player's role
-          shareUrl: prev.shareUrl,
-          opponentConnected: true, // Keep both players connected
-          createdAt: data.createdAt,
-          lastUpdated: data.lastUpdated,
-          restartRequested: { X: false, O: false }
-        };
-      });
+        console.log('Game state successfully reset');
+      } catch (error) {
+        console.error('Error handling gameRestarted event:', error);
+      }
     });
     
     // Handle errors
@@ -274,15 +293,37 @@ export default function useSocket(gameId?: string) {
   
   // Request to restart the game
   const requestRestart = useCallback(() => {
-    if (!socket || !gameState) {
-      console.error("Cannot restart game: Socket not connected or game state missing");
+    console.log("requestRestart called, socket:", !!socket, "gameState:", !!gameState);
+    
+    if (!socket) {
+      console.error("Cannot restart game: Socket not connected");
+      return;
+    }
+    
+    if (!gameState) {
+      console.error("Cannot restart game: Game state missing");
+      return;
+    }
+    
+    if (!gameState.id) {
+      console.error("Cannot restart game: Game ID missing in game state", gameState);
       return;
     }
     
     console.log("Requesting game restart for game:", gameState.id, "as player:", gameState.role);
     
-    // Send restart request to server
-    socket.emit('restartGame', { gameId: gameState.id });
+    // Try-catch to handle any errors
+    try {
+      // Log event before sending
+      console.log("Emitting restartGame event to server with payload:", { gameId: gameState.id });
+      
+      // Send restart request to server
+      socket.emit('restartGame', { gameId: gameState.id });
+      
+      console.log("restartGame event emitted successfully");
+    } catch (error) {
+      console.error("Error sending restart request:", error);
+    }
   }, [socket, gameState]);
 
   return {

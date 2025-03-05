@@ -115,11 +115,27 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
           </p>
           
           <button 
-            onClick={handleRestartRequest}
-            className="px-4 py-2 rounded-md transition-colors bg-primary text-white hover:bg-opacity-90 font-bold"
+            onClick={(e) => {
+              console.log("Play Again button direct click handler");
+              // Call the handler but also do direct debugging
+              handleRestartRequest(e);
+              
+              // Direct debugging - call onRequestRestart directly if it exists
+              if (onRequestRestart) {
+                console.log("Directly calling onRequestRestart from button click");
+                try {
+                  onRequestRestart();
+                } catch (error) {
+                  console.error("Error directly calling restart:", error);
+                }
+              } else {
+                console.error("onRequestRestart is not available");
+              }
+            }}
+            className="px-6 py-3 rounded-md transition-colors bg-green-600 hover:bg-green-700 text-white font-bold text-lg shadow-md"
             data-testid="play-again-button"
           >
-            Play Again
+            PLAY AGAIN
           </button>
         </div>
       );

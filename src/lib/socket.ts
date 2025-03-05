@@ -196,55 +196,88 @@ export default function initSocketServer(server: NetServer) {
       io?.to(gameId).emit('gameUpdated', game);
     });
     
-    // Handle game restart request - simplified to allow any player to restart
-    socket.on('restartGame', ({ gameId }) => {
-      console.log(`Restart game request for ${gameId} from ${socket.id}`);
+    // Handle game restart request - completely rebuilt for reliability
+    socket.on('restartGame', (data) => {
+      console.log(`Restart game request received:`, data);
       
+      // Early validate data
+      if (!data || typeof data !== 'object') {
+        console.error('Invalid restart data received:', data);
+        return socket.emit('error', { message: 'Invalid restart request data' });
+      }
+      
+      const { gameId } = data;
+      
+      if (!gameId) {
+        console.error('No gameId in restart request:', data);
+        return socket.emit('error', { message: 'Game ID is required' });
+      }
+      
+      console.log(`Processing restart request for game ${gameId} from ${socket.id}`);
+      
+      // Get the game
       const game = games[gameId];
       
       if (!game) {
-        console.log('Game not found for restart:', gameId);
+        console.error(`Game not found for restart: ${gameId}`);
         return socket.emit('error', { message: 'Game not found' });
       }
       
       // Determine if player is part of this game
       const isPlayerX = game.players.X === socket.id;
       const isPlayerO = game.players.O === socket.id;
+      const isPlayer = isPlayerX || isPlayerO;
       
-      if (!isPlayerX && !isPlayerO) {
-        console.log('Non-player trying to restart:', socket.id);
+      if (!isPlayer) {
+        console.error(`Non-player trying to restart: ${socket.id} for game ${gameId}`);
         return socket.emit('error', { message: 'You are not a player in this game' });
       }
       
       // Get player role for logging
       const playerRole = isPlayerX ? 'X' : 'O';
-      console.log(`Player ${playerRole} restarted game ${gameId}`);
+      console.log(`Player ${playerRole} (${socket.id}) is restarting game ${gameId}`);
       
-      // Reset the game board immediately
+      // Reset the game state
+      console.log(`Resetting game state for ${gameId}`);
       game.squares = Array(9).fill(null);
       game.currentTurn = 'X'; // X always starts
       game.lastUpdated = Date.now();
       
-      // Clear any existing restart requests
+      // Clear any existing restart requests 
       if (game.restartRequested) {
         game.restartRequested = { X: false, O: false };
       }
       
       try {
-        // Notify all players of the restart - send a complete game state to ensure clients have correct data
-        io?.to(gameId).emit('gameRestarted', {
+        // Prepare a complete game state for clients
+        const gameState = {
           id: game.id,
-          squares: game.squares,
-          players: game.players,
-          currentTurn: game.currentTurn,
+          squares: Array(9).fill(null),
+          players: { ...game.players },
+          currentTurn: 'X',
           createdAt: game.createdAt,
           lastUpdated: game.lastUpdated,
           restartedBy: playerRole
-        });
+        };
+        
+        console.log(`Emitting gameRestarted to room ${gameId} with state:`, gameState);
+        
+        // Emit directly to each player individually to ensure delivery
+        if (game.players.X) {
+          io?.to(game.players.X).emit('gameRestarted', gameState);
+        }
+        
+        if (game.players.O) {
+          io?.to(game.players.O).emit('gameRestarted', gameState);
+        }
+        
+        // Also emit to the room as backup
+        io?.to(gameId).emit('gameRestarted', gameState);
         
         console.log(`Game ${gameId} has been restarted by player ${playerRole}`);
       } catch (error) {
         console.error('Error sending gameRestarted event:', error);
+        socket.emit('error', { message: 'Failed to restart the game' });
       }
     });
     

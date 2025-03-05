@@ -224,12 +224,21 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <OnlineBoard 
           gameState={gameState}
           onSquareClick={makeMove}
-          onRequestRestart={() => {
-            console.log("Restart callback called from OnlineBoard");
-            if (requestRestart) {
+          onRequestRestart={function playAgainHandler() {
+            console.log("playAgainHandler called, gameId:", gameId);
+            
+            if (!requestRestart) {
+              console.error("requestRestart function is not available!");
+              return;
+            }
+            
+            // Try/catch to catch any possible errors
+            try {
+              console.log("Calling requestRestart function");
               requestRestart();
-            } else {
-              console.error("requestRestart is undefined");
+              console.log("requestRestart function completed");
+            } catch (error) {
+              console.error("Error in requestRestart:", error);
             }
           }}
         />
