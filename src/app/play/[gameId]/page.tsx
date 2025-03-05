@@ -156,7 +156,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           <h1 className="text-3xl font-bold mb-8 text-center">Game Not Found</h1>
           
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
-            <p className="mb-4">The game you're looking for doesn't exist or has expired.</p>
+            <p className="mb-4">The game you&apos;re looking for doesn&apos;t exist or has expired.</p>
             <div className="flex gap-3">
               <button
                 onClick={handleRetryConnection}
@@ -243,7 +243,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
                 <p className="mt-2">
                   {gameState.currentTurn === gameState.role 
                     ? <span className="text-green-500 dark:text-green-300 font-semibold">Your turn</span>
-                    : <span className="text-gray-500 dark:text-gray-400">Opponent's turn</span>
+                    : <span className="text-gray-500 dark:text-gray-400">Opponent&apos;s turn</span>
                   }
                 </p>
               )}
@@ -277,7 +277,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           <Link
             href="/play"
             className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-bold text-lg shadow-md"
-            onClick={(e) => {
+            onClick={() => {
               // First inform the server we're leaving (if still connected)
               if (socket && socket.connected && gameState) {
                 try {

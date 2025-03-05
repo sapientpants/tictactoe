@@ -45,6 +45,7 @@ export default function Game() {
       
       return () => clearTimeout(timerId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [xIsNext, gameMode, gameComplete, aiDifficulty, squares]);
   
   const handleMove = (i: number) => {

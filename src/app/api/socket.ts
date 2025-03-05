@@ -1,6 +1,4 @@
-import { Server as NetServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import { NextApiRequest, NextApiResponse } from 'next';
 import { NextRequest } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,10 +16,12 @@ export const config = {
 let io: SocketIOServer | null = null;
 
 // In-memory game store
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const games: Record<string, any> = {};
 
 // Initialize socket server
-export default async function SocketHandler(req: NextRequest, res: any) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default async function SocketHandler(_req: NextRequest, res: any) {
   // Return early if socket.io is already initialized
   if (res.socket.server.io) {
     console.log('Socket is already running');

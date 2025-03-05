@@ -121,6 +121,8 @@ function findWinningMove(
   ];
   
   for (const line of lines) {
+    // Destructuring is done but variables not used directly
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [a, b, c] = line;
     // Check if two squares in a line are filled by the player and one is empty
     const playerSquares = line.filter(index => squares[index] === player);

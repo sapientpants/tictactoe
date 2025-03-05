@@ -109,6 +109,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Initialize theme on mount
   useEffect(() => {
     applyTheme(theme);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   return (

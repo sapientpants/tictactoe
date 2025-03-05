@@ -36,6 +36,8 @@ function cleanupSockets() {
 }
 
 export default function PlayPage() {
+  // Router not used currently but kept for future navigation needs
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
   
   // Clean up any previous socket connections when mounting this component

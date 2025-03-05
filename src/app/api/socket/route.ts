@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 /**
  * API route to check socket server status and game information
  */
-export async function GET(req: NextRequest) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function GET(_req: NextRequest) {
   console.log("Socket.io API endpoint hit");
   
   const io = getSocketServer();

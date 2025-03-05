@@ -78,7 +78,7 @@ export default function useSocket(gameId?: string) {
           return;
         }
         
-        // Check server status first
+        // Check server status first - using initializing to prevent multiple checks
         if (!initializing) {
           setInitializing(true);
           console.log('Checking socket.io server status...');
@@ -148,6 +148,7 @@ export default function useSocket(gameId?: string) {
       // to allow it to be reused across the app
       // The socket will be automatically disconnected when the page is closed
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameId]);
   
   // Set up event handlers for socket

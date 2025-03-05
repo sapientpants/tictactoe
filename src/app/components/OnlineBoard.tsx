@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { OnlineGameState } from '../hooks/useSocket';
-import { calculateWinner } from '../utils/gameUtils';
 import Square from './Square';
 
 interface OnlineBoardProps {
