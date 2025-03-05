@@ -6,11 +6,15 @@ import Link from 'next/link';
 import { ThemeProvider } from '../context/ThemeContext';
 import ThemeSelector from '../components/ThemeSelector';
 import { io } from 'socket.io-client';
+import { resetSocketInstance } from '../hooks/useSocket';
 
 // Helper function to clean up any existing socket connections
 function cleanupSockets() {
   // Try to disconnect any existing sockets
   try {
+    // Reset the global socket instance reference
+    resetSocketInstance();
+    
     // Get all possible socket.io connection keys from localStorage
     const storageKeys = Object.keys(localStorage);
     const socketKeys = storageKeys.filter(key => key.startsWith('socket.io'));

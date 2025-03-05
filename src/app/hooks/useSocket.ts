@@ -28,6 +28,12 @@ export interface OnlineGameState {
 // Create a single socket instance to be reused across the app
 let socketInstance: Socket | null = null;
 
+// Function to reset the socket instance reference
+export function resetSocketInstance() {
+  console.log("Resetting global socket instance reference");
+  socketInstance = null;
+}
+
 export default function useSocket(gameId?: string) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [gameState, setGameState] = useState<OnlineGameState | null>(null);
@@ -43,8 +49,21 @@ export default function useSocket(gameId?: string) {
       setError(null);
       
       try {
-        // If we already have a socket instance, use it
-        if (socketInstance && socketInstance.connected) {
+        // If we're creating a new game (no gameId), always create a fresh socket connection
+        if (!gameId) {
+          console.log('Creating new game - always using a fresh socket connection');
+          // Reset any existing socket instance
+          if (socketInstance) {
+            console.log('Disconnecting existing socket for new game creation');
+            if (socketInstance.connected) {
+              socketInstance.disconnect();
+            }
+            socketInstance = null;
+          }
+        }
+        
+        // If we already have a socket instance, use it for joining existing games
+        if (socketInstance && socketInstance.connected && gameId) {
           console.log('Reusing existing socket connection');
           setSocket(socketInstance);
           setIsConnected(true);
@@ -328,6 +347,19 @@ export default function useSocket(gameId?: string) {
     }
   }, [socket, gameState]);
 
+  // Function to disconnect and reset socket
+  const disconnectSocket = useCallback(() => {
+    console.log("Disconnecting socket from hook");
+    if (socket && socket.connected) {
+      socket.disconnect();
+    }
+    
+    // Reset global socket instance
+    resetSocketInstance();
+    setSocket(null);
+    setGameState(null);
+  }, [socket]);
+
   return {
     socket,
     gameState,
@@ -338,5 +370,6 @@ export default function useSocket(gameId?: string) {
     joinGame,
     makeMove,
     requestRestart,
+    disconnectSocket,
   };
 }

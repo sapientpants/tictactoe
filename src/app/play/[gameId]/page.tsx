@@ -13,7 +13,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   const gameId = unwrappedParams.gameId;
   
   const router = useRouter();
-  const { gameState, error, isLoading, isConnected, makeMove, requestRestart, socket } = useSocket(gameId);
+  const { gameState, error, isLoading, isConnected, makeMove, requestRestart, socket, disconnectSocket } = useSocket(gameId);
   
   // For debugging
   console.log("GameId page mounted with requestRestart function available:", !!requestRestart);
@@ -278,23 +278,26 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
             href="/play"
             className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-bold text-lg shadow-md"
             onClick={(e) => {
-              // Disconnect socket to clear all state when exiting
-              if (socket) {
-                console.log("Disconnecting socket on exit");
-                socket.disconnect();
-              }
-              
-              // Clear any local storage or other state if needed
-              console.log("Cleaning up game state on exit");
-              
-              // Inform the server we're leaving (if still connected)
+              // First inform the server we're leaving (if still connected)
               if (socket && socket.connected && gameState) {
                 try {
+                  console.log("Sending leaveGame event for gameId:", gameState.id);
                   socket.emit('leaveGame', { gameId: gameState.id });
                 } catch (e) {
                   console.error("Error sending leaveGame event:", e);
                 }
               }
+              
+              // Disconnect socket to clear all state when exiting
+              // Small delay to ensure leaveGame is processed first
+              setTimeout(() => {
+                console.log("Disconnecting socket and resetting state");
+                disconnectSocket();
+                console.log("Socket disconnected and reference cleared");
+              }, 100);
+              
+              // Clear any local storage or other state if needed
+              console.log("Cleaning up game state on exit");
             }}
           >
             EXIT GAME

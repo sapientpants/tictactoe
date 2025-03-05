@@ -4,11 +4,15 @@ import Link from 'next/link';
 import Game from './components/Game';
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
+import { resetSocketInstance } from './hooks/useSocket';
 
 // Helper function to disconnect any active sockets
 function cleanupGameConnections() {
   console.log("Cleaning up any active game connections");
   try {
+    // Reset the global socket instance
+    resetSocketInstance();
+    
     // Try to disconnect any existing sockets
     const tempSocket = io();
     if (tempSocket) {
