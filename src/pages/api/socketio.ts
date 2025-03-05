@@ -2,15 +2,45 @@ import { Server as ServerIO } from "socket.io";
 import { NextApiRequest, NextApiResponse } from "next";
 import { v4 as uuidv4 } from 'uuid';
 
+// Enable CORS for socket.io
+export const config = {
+  api: {
+    bodyParser: false,
+    externalResolver: true,
+  },
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log("Socket.io initialization API called");
+  
+  // For debugging server instance
+  if (!res.socket || !res.socket.server) {
+    console.error("No socket server available", { 
+      hasSocket: !!res.socket, 
+      hasSocketServer: !!(res.socket && res.socket.server)
+    });
+    res.status(500).json({ error: "Server initialization failed" });
+    return;
+  }
+  
   // Socket.io server already initialized
   if (res.socket.server.io) {
-    res.end();
+    console.log("Socket.io already initialized, reusing instance");
+    res.status(200).json({ success: true, message: "Socket server already running" });
     return;
   }
 
+  console.log("Creating new Socket.io instance");
+  
   // Create a new instance of socket.io server
-  const io = new ServerIO(res.socket.server);
+  const io = new ServerIO(res.socket.server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+      allowedHeaders: ["*"],
+      credentials: true
+    }
+  });
   res.socket.server.io = io;
 
   // Set up an in-memory game state store
@@ -21,24 +51,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log("Socket connected:", socket.id);
 
     // Create a new game
-    socket.on("createGame", () => {
-      const gameId = uuidv4();
-      games[gameId] = {
-        id: gameId,
-        squares: Array(9).fill(null),
-        currentTurn: "X",
-        players: { X: socket.id, O: null },
-        createdAt: Date.now(),
-      };
+    socket.on("createGame", (data, callback) => {
+      console.log(`Create game request from ${socket.id}`);
+      
+      try {
+        const gameId = uuidv4();
+        games[gameId] = {
+          id: gameId,
+          squares: Array(9).fill(null),
+          currentTurn: "X",
+          players: { X: socket.id, O: null },
+          createdAt: Date.now(),
+        };
 
-      socket.join(gameId);
-      socket.emit("gameCreated", {
-        gameId,
-        role: "X",
-        shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/play/${gameId}`,
-      });
+        socket.join(gameId);
+        
+        const gameData = {
+          gameId,
+          role: "X",
+          shareUrl: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/play/${gameId}`,
+        };
+        
+        // Send response both through callback and emit for redundancy
+        if (typeof callback === 'function') {
+          callback(gameData);
+        }
+        socket.emit("gameCreated", gameData);
 
-      console.log(`Game created: ${gameId}`);
+        console.log(`Game created: ${gameId}`);
+      } catch (error) {
+        console.error("Error creating game:", error);
+        if (typeof callback === 'function') {
+          callback({ error: "Failed to create game" });
+        }
+      }
     });
 
     // Join an existing game
@@ -131,5 +177,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   });
 
-  res.end();
+  // Return success response
+  console.log("Socket.io server initialized successfully");
+  res.status(200).json({ success: true, message: "Socket.io server initialized" });
 }

@@ -14,11 +14,27 @@ export default function NewGamePage() {
 
   // Create a new game when the component mounts and socket is connected
   useEffect(() => {
+    console.log("Game creation page loaded, connection status:", isConnected);
+    
     if (isConnected) {
       console.log("Socket connected, creating game...");
-      createGame();
+      try {
+        createGame();
+        console.log("Game creation function called");
+      } catch (error) {
+        console.error("Error creating game:", error);
+      }
     }
   }, [isConnected, createGame]);
+  
+  // Debug socket state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("Connection status:", isConnected);
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   // Redirect to the game when it's created
   useEffect(() => {
@@ -37,6 +53,15 @@ export default function NewGamePage() {
             <div className="flex flex-col items-center p-6">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
               <p>Creating a new game...</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {isConnected ? "Connected to server" : "Connecting to server..."}
+              </p>
+              <button 
+                onClick={() => createGame()}
+                className="mt-4 px-3 py-1 bg-primary text-white text-sm rounded"
+              >
+                Retry
+              </button>
             </div>
           ) : error ? (
             <div className="text-red-500 p-4 rounded-md bg-red-100 dark:bg-red-900 dark:bg-opacity-20">

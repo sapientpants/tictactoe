@@ -37,11 +37,19 @@ export default function useSocket(gameId?: string) {
     setIsLoading(true);
     
     // First fetch the socket endpoint to initialize the server
+    console.log('Initializing socket.io server...');
     fetch('/api/socketio')
+      .then(() => console.log('Socket.io server initialized via fetch'))
       .catch(err => console.error('Could not initialize socket.io server:', err));
       
-    // Then create the socket connection
-    const socketInstance = io(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
+    // Then create the socket connection with specific options for reliable connection
+    console.log('Creating socket connection...');
+    const socketInstance = io({
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      timeout: 20000
+    });
     
     socketInstance.on('connect', () => {
       console.log('Socket connected');
@@ -158,8 +166,19 @@ export default function useSocket(gameId?: string) {
   
   // Create new game
   const createGame = useCallback(() => {
-    if (!socket) return;
-    socket.emit('createGame');
+    if (!socket) {
+      console.error("Cannot create game: Socket not connected");
+      return;
+    }
+    console.log("Emitting createGame event");
+    
+    // Use acknowledgment callback for more reliable response
+    socket.emit('createGame', {}, (response) => {
+      console.log("Received createGame acknowledgment:", response);
+      if (response.error) {
+        setError(response.error);
+      }
+    });
   }, [socket]);
   
   // Join existing game
