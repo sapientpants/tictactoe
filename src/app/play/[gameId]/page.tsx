@@ -13,7 +13,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   const gameId = unwrappedParams.gameId;
   
   const router = useRouter();
-  const { gameState, error, isLoading, isConnected, makeMove } = useSocket(gameId);
+  const { gameState, error, isLoading, isConnected, makeMove, requestRestart } = useSocket(gameId);
   const [copied, setCopied] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   
@@ -221,6 +221,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <OnlineBoard 
           gameState={gameState}
           onSquareClick={makeMove}
+          onRequestRestart={requestRestart}
         />
         
         <div className="mt-6 flex gap-4">

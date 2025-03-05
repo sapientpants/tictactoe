@@ -18,6 +18,10 @@ export interface OnlineGameState {
   opponentConnected?: boolean;
   createdAt: number;
   lastUpdated?: number;
+  restartRequested?: {
+    X?: boolean;
+    O?: boolean;
+  };
 }
 
 // Create a single socket instance to be reused across the app
@@ -134,6 +138,8 @@ export default function useSocket(gameId?: string) {
     socket.off('opponentJoined');
     socket.off('gameUpdated');
     socket.off('playerDisconnected');
+    socket.off('restartRequested');
+    socket.off('gameRestarted');
     socket.off('error');
     
     // Handle game creation
@@ -148,6 +154,7 @@ export default function useSocket(gameId?: string) {
         shareUrl: data.shareUrl,
         createdAt: Date.now(),
         opponentConnected: false,
+        restartRequested: { X: false, O: false },
       });
     });
     
@@ -198,6 +205,36 @@ export default function useSocket(gameId?: string) {
       });
     });
     
+    // Handle restart requests
+    socket.on('restartRequested', (data) => {
+      console.log('Restart requested:', data);
+      setGameState(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          restartRequested: {
+            ...prev.restartRequested,
+            [data.requestedBy]: true
+          }
+        };
+      });
+    });
+    
+    // Handle game restart
+    socket.on('gameRestarted', (data) => {
+      console.log('Game restarted:', data);
+      setGameState(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          ...data,
+          squares: Array(9).fill(null),
+          currentTurn: 'X',
+          restartRequested: { X: false, O: false }
+        };
+      });
+    });
+    
     // Handle errors
     socket.on('error', (data) => {
       console.error('Socket error:', data);
@@ -238,6 +275,17 @@ export default function useSocket(gameId?: string) {
     socket.emit('makeMove', { gameId: gameState.id, index });
   }, [socket, gameState]);
   
+  // Request to restart the game
+  const requestRestart = useCallback(() => {
+    if (!socket || !gameState) {
+      console.error("Cannot restart game: Socket not connected or game state missing");
+      return;
+    }
+    
+    console.log("Requesting game restart for game:", gameState.id);
+    socket.emit('restartGame', { gameId: gameState.id });
+  }, [socket, gameState]);
+
   return {
     socket,
     gameState,
@@ -247,5 +295,6 @@ export default function useSocket(gameId?: string) {
     createGame,
     joinGame,
     makeMove,
+    requestRestart,
   };
 }

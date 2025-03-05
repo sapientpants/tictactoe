@@ -196,6 +196,59 @@ export default function initSocketServer(server: NetServer) {
       io?.to(gameId).emit('gameUpdated', game);
     });
     
+    // Handle game restart request
+    socket.on('restartGame', ({ gameId }) => {
+      console.log(`Restart game request for ${gameId} from ${socket.id}`);
+      
+      const game = games[gameId];
+      
+      if (!game) {
+        return socket.emit('error', { message: 'Game not found' });
+      }
+      
+      // Check if player is part of this game
+      const isPlayerX = game.players.X === socket.id;
+      const isPlayerO = game.players.O === socket.id;
+      
+      if (!isPlayerX && !isPlayerO) {
+        return socket.emit('error', { message: 'You are not a player in this game' });
+      }
+      
+      // Reset the game board
+      game.squares = Array(9).fill(null);
+      game.currentTurn = 'X'; // X always starts
+      game.lastUpdated = Date.now();
+      
+      // Track who requested restart
+      if (!game.restartRequested) {
+        game.restartRequested = {};
+      }
+      
+      // Mark this player as having requested restart
+      const playerRole = isPlayerX ? 'X' : 'O';
+      game.restartRequested[playerRole] = true;
+      
+      // Check if both players have requested restart
+      const bothPlayersRequested = game.restartRequested.X && game.restartRequested.O;
+      
+      if (bothPlayersRequested) {
+        // Reset the restart request tracker
+        game.restartRequested = { X: false, O: false };
+        
+        // Notify all players of restart
+        io?.to(gameId).emit('gameRestarted', game);
+        console.log(`Game ${gameId} has been restarted`);
+      } else {
+        // Notify that one player requested restart
+        io?.to(gameId).emit('restartRequested', { 
+          gameId,
+          requestedBy: playerRole,
+          bothPlayersRequested: false
+        });
+        console.log(`Player ${playerRole} requested restart for game ${gameId}`);
+      }
+    });
+    
     // Handle disconnections
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);

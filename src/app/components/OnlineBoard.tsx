@@ -8,9 +8,10 @@ import Square from './Square';
 interface OnlineBoardProps {
   gameState: OnlineGameState;
   onSquareClick: (index: number) => void;
+  onRequestRestart?: () => void;
 }
 
-export default function OnlineBoard({ gameState, onSquareClick }: OnlineBoardProps) {
+export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart }: OnlineBoardProps) {
   const [winner, setWinner] = useState<string | null>(null);
   const [winningLine, setWinningLine] = useState<number[] | null>(null);
   const [isDraw, setIsDraw] = useState(false);
@@ -51,6 +52,13 @@ export default function OnlineBoard({ gameState, onSquareClick }: OnlineBoardPro
     onSquareClick(i);
   };
   
+  // Request to restart the game
+  const handleRestartRequest = () => {
+    if (onRequestRestart) {
+      onRequestRestart();
+    }
+  };
+  
   // Render a square with the right styling
   const renderSquare = (i: number) => {
     const isWinningSquare = winningLine?.includes(i);
@@ -70,25 +78,49 @@ export default function OnlineBoard({ gameState, onSquareClick }: OnlineBoardPro
     );
   };
   
-  // Render game result message
+  // Check if this player or opponent has requested a restart
+  const hasRequestedRestart = gameState.restartRequested?.[gameState.role || 'X'];
+  const opponentRequestedRestart = gameState.restartRequested?.[gameState.role === 'X' ? 'O' : 'X'];
+  
+  // Render game result message with restart button
   const renderGameResult = () => {
-    if (winner) {
+    if (winner || isDraw) {
       const isUserWinner = winner === gameState.role;
-      return (
-        <div className={`mt-4 p-3 rounded-md text-center ${
-          isUserWinner 
+      const resultStyle = winner 
+        ? (isUserWinner 
             ? 'bg-green-100 dark:bg-green-900 dark:bg-opacity-20 text-green-800 dark:text-green-200' 
-            : 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-800 dark:text-red-200'
-        }`}>
-          <p className="font-bold">
-            {isUserWinner ? 'You won!' : 'You lost!'}
-          </p>
-        </div>
-      );
-    } else if (isDraw) {
+            : 'bg-red-100 dark:bg-red-900 dark:bg-opacity-20 text-red-800 dark:text-red-200')
+        : 'bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 text-yellow-800 dark:text-yellow-200';
+      
       return (
-        <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900 dark:bg-opacity-20 text-yellow-800 dark:text-yellow-200 rounded-md text-center">
-          <p className="font-bold">Game ended in a draw!</p>
+        <div className={`mt-4 p-4 rounded-md text-center ${resultStyle}`}>
+          <p className="font-bold mb-3">
+            {winner 
+              ? (isUserWinner ? 'You won!' : 'You lost!') 
+              : 'Game ended in a draw!'}
+          </p>
+          
+          {opponentRequestedRestart && (
+            <div className="mb-3 p-2 bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 rounded">
+              <p className="text-sm">Opponent wants to play again!</p>
+            </div>
+          )}
+          
+          <button 
+            onClick={handleRestartRequest}
+            disabled={hasRequestedRestart}
+            className={`px-4 py-2 rounded-md transition-colors ${
+              hasRequestedRestart
+                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                : 'bg-primary text-white hover:bg-opacity-90'
+            }`}
+          >
+            {hasRequestedRestart 
+              ? 'Waiting for opponent...' 
+              : opponentRequestedRestart 
+                ? 'Accept Rematch' 
+                : 'Request Rematch'}
+          </button>
         </div>
       );
     }
