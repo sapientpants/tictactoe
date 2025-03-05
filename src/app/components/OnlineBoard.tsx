@@ -21,17 +21,29 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
   useEffect(() => {
     console.log('Game state updated in OnlineBoard, squares:', gameState.squares);
     
-    // Check for restart notification
-    if (gameState.restartedBy && gameState.restartedBy !== gameState.role) {
-      setShowRestartNotification(true);
-      // Hide the notification after 5 seconds
-      const timer = setTimeout(() => {
-        setShowRestartNotification(false);
-      }, 5000);
-      return () => clearTimeout(timer);
+    // Check if this is a game restart (empty board)
+    const isGameRestart = gameState.squares.every(square => square === null);
+    
+    // If game is restarted, reset all game state regardless of who restarted
+    if (isGameRestart) {
+      console.log('Game restarted, resetting local game state');
+      setWinner(null);
+      setWinningLine(null);
+      setIsDraw(false);
+      
+      // Show notification if the opponent restarted the game
+      if (gameState.restartedBy && gameState.restartedBy !== gameState.role) {
+        setShowRestartNotification(true);
+        // Hide the notification after 5 seconds
+        const timer = setTimeout(() => {
+          setShowRestartNotification(false);
+        }, 5000);
+        return () => clearTimeout(timer);
+      }
+      return;
     }
     
-    // Reset local state when gameState changes
+    // For ongoing games, determine game state
     const result = calculateWinnerWithLine(gameState.squares);
     
     if (result) {
