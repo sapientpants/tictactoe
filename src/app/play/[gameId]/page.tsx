@@ -177,22 +177,14 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     );
   }
 
-  // Debug gameState info
-  console.log("Current game state:", {
-    role: gameState?.role,
-    opponentConnected: gameState?.opponentConnected,
-    gameId: gameState?.id
-  });
+  // Game is ready to render
   
   return (
     <ThemeProvider>
       <div className="flex flex-col items-center max-w-lg mx-auto p-6">
         <div className="w-full mb-4">
           <h1 className="text-3xl font-bold text-center">
-            Online Tic Tac Toe 
-            {gameState?.role && <span className="ml-2 px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-md text-sm">
-              Player {gameState.role}
-            </span>}
+            Online Tic Tac Toe
           </h1>
         </div>
         
@@ -281,20 +273,12 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           }}
         />
         
-        {/* Debug info - remove in production */}
-        <div className="w-full mt-4 mb-2 p-2 bg-gray-100 dark:bg-gray-800 rounded text-xs text-gray-500 dark:text-gray-400">
-          <p>Debug: You are Player {gameState.role} | Game ID: {gameState.id.substring(0, 8)}...</p>
-        </div>
-        
-        {/* Exit Game button */}
-        <div className="mt-4 mb-8 flex justify-center">
+        {/* Exit Game button - identical for both players */}
+        <div className="mt-8 mb-6 flex justify-center">
           <Link
             href="/play"
-            className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-bold text-xl shadow-lg animate-pulse"
+            className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-bold text-lg shadow-md"
             onClick={(e) => {
-              // Explicitly log which player is clicking exit
-              console.log(`Player ${gameState.role} clicked Exit Game`);
-              
               // Disconnect socket to clear all state when exiting
               if (socket) {
                 console.log("Disconnecting socket on exit");
@@ -314,7 +298,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
               }
             }}
           >
-            ⬅️ EXIT GAME
+            EXIT GAME
           </Link>
         </div>
       </div>
