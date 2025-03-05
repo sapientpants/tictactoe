@@ -3,8 +3,8 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ThemeProvider } from '../../context/ThemeContext';
-import ThemeSelector from '../../components/ThemeSelector';
+import { ThemeProvider } from '../context/ThemeContext';
+import ThemeSelector from '../components/ThemeSelector';
 
 export default function PlayPage() {
   const router = useRouter();

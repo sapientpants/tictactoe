@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import useSocket from '../../../hooks/useSocket';
-import { ThemeProvider } from '../../../context/ThemeContext';
-import OnlineBoard from '../../../components/OnlineBoard';
+import useSocket from '../../hooks/useSocket';
+import { ThemeProvider } from '../../context/ThemeContext';
+import OnlineBoard from '../../components/OnlineBoard';
 
 export default function GamePage({ params }: { params: { gameId: string } }) {
   const { gameId } = params;

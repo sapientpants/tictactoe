@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import useSocket from '../../../hooks/useSocket';
-import { ThemeProvider } from '../../../context/ThemeContext';
-import OnlineBoard from '../../../components/OnlineBoard';
+import useSocket from '../../hooks/useSocket';
+import { ThemeProvider } from '../../context/ThemeContext';
+import OnlineBoard from '../../components/OnlineBoard';
 
 export default function NewGamePage() {
   const router = useRouter();
