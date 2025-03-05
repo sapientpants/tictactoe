@@ -36,11 +36,12 @@ export default function useSocket(gameId?: string) {
     socketInitialized.current = true;
     setIsLoading(true);
     
-    // Initialize Socket.io with specific URL and options
-    const socketInstance = io(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000', {
-      path: '/api/socket/io',
-      addTrailingSlash: false,
-    });
+    // First fetch the socket endpoint to initialize the server
+    fetch('/api/socketio')
+      .catch(err => console.error('Could not initialize socket.io server:', err));
+      
+    // Then create the socket connection
+    const socketInstance = io(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000');
     
     socketInstance.on('connect', () => {
       console.log('Socket connected');
