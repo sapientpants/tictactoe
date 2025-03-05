@@ -13,7 +13,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   const gameId = unwrappedParams.gameId;
   
   const router = useRouter();
-  const { gameState, error, isLoading, isConnected, makeMove, requestRestart } = useSocket(gameId);
+  const { gameState, error, isLoading, isConnected, makeMove, requestRestart, socket } = useSocket(gameId);
   
   // For debugging
   console.log("GameId page mounted with requestRestart function available:", !!requestRestart);
@@ -53,7 +53,17 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     return (
       <ThemeProvider>
         <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Connecting to Game</h1>
+          <div className="w-full flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Connecting to Game</h1>
+            
+            <Link
+              href="/play"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            >
+              Exit Game
+            </Link>
+          </div>
+          
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
             <p>Connecting to the game...</p>
@@ -73,7 +83,17 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     return (
       <ThemeProvider>
         <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Connection Error</h1>
+          <div className="w-full flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Connection Error</h1>
+            
+            <Link
+              href="/play"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            >
+              Exit Game
+            </Link>
+          </div>
+          
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
             <div className="text-red-500 p-4 rounded-md bg-red-100 dark:bg-red-900 dark:bg-opacity-20">
               <h3 className="font-bold">Unable to Connect to Game Server</h3>
@@ -85,12 +105,6 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
                 >
                   Try Again
                 </button>
-                <Link
-                  href="/play"
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
-                >
-                  Back to Menu
-                </Link>
               </div>
             </div>
           </div>
@@ -104,7 +118,17 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     return (
       <ThemeProvider>
         <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Game Error</h1>
+          <div className="w-full flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Game Error</h1>
+            
+            <Link
+              href="/play"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            >
+              Exit Game
+            </Link>
+          </div>
+          
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
             <div className="text-red-500 p-4 rounded-md bg-red-100 dark:bg-red-900 dark:bg-opacity-20">
               <h3 className="font-bold">Unable to Join Game</h3>
@@ -116,12 +140,6 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
                 >
                   Try Again
                 </button>
-                <Link
-                  href="/play"
-                  className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
-                >
-                  Back to Play Menu
-                </Link>
               </div>
             </div>
           </div>
@@ -135,7 +153,17 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     return (
       <ThemeProvider>
         <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Game Not Found</h1>
+          <div className="w-full flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold">Game Not Found</h1>
+            
+            <Link
+              href="/play"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            >
+              Exit Game
+            </Link>
+          </div>
+          
           <div className="w-full bg-board dark:bg-gray-800 rounded-lg p-6 shadow-md">
             <p className="mb-4">The game you're looking for doesn't exist or has expired.</p>
             <div className="flex gap-3">
@@ -145,12 +173,6 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
               >
                 Try Again
               </button>
-              <Link
-                href="/play"
-                className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
-              >
-                Back to Menu
-              </Link>
             </div>
           </div>
         </div>
@@ -161,7 +183,35 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   return (
     <ThemeProvider>
       <div className="flex flex-col items-center max-w-lg mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-4">Online Tic Tac Toe</h1>
+        <div className="w-full flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold">Online Tic Tac Toe</h1>
+          
+          <Link
+            href="/play"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            onClick={() => {
+              // Disconnect socket to clear all state when exiting
+              if (socket) {
+                console.log("Disconnecting socket on exit");
+                socket.disconnect();
+              }
+              
+              // Clear any local storage or other state if needed
+              console.log("Cleaning up game state on exit");
+              
+              // Inform the server we're leaving (if still connected)
+              if (socket && socket.connected && gameState) {
+                try {
+                  socket.emit('leaveGame', { gameId: gameState.id });
+                } catch (e) {
+                  console.error("Error sending leaveGame event:", e);
+                }
+              }
+            }}
+          >
+            Exit Game
+          </Link>
+        </div>
         
         {gameState.role === 'X' && !gameState.opponentConnected && (
           <div className="w-full bg-yellow-50 dark:bg-yellow-900 dark:bg-opacity-20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
@@ -243,33 +293,6 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           }}
         />
         
-        <div className="mt-6 flex gap-4">
-          <Link
-            href="/play"
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
-            onClick={() => {
-              // Disconnect socket to clear all state when exiting
-              if (socket) {
-                console.log("Disconnecting socket on exit");
-                socket.disconnect();
-              }
-              
-              // Clear any local storage or other state if needed
-              console.log("Cleaning up game state on exit");
-              
-              // Inform the server we're leaving (if still connected)
-              if (socket && socket.connected && gameState) {
-                try {
-                  socket.emit('leaveGame', { gameId: gameState.id });
-                } catch (e) {
-                  console.error("Error sending leaveGame event:", e);
-                }
-              }
-            }}
-          >
-            Exit Game
-          </Link>
-        </div>
       </div>
     </ThemeProvider>
   );
