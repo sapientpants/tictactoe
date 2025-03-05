@@ -24,7 +24,7 @@ app.prepare().then(() => {
   server.listen(PORT, () => {
     console.log(`> Socket.io server running on port ${PORT}`);
   });
-}).catch(err => {
+}).catch((err: Error) => {
   console.error('Error starting server:', err);
   process.exit(1);
 });

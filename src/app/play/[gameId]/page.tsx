@@ -8,7 +8,6 @@ import OnlineBoard from '../../components/OnlineBoard';
 import { useRouter } from 'next/navigation';
 
 // Define the component with proper Next.js App Router types
-// @ts-ignore - We know this is correct for app router
 export default function GamePage({ 
   params 
 }: { 
