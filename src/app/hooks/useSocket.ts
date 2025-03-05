@@ -36,8 +36,9 @@ export default function useSocket(gameId?: string) {
     socketInitialized.current = true;
     setIsLoading(true);
     
-    const socketInstance = io({
-      path: '/api/socket',
+    // Initialize Socket.io with specific URL and options
+    const socketInstance = io(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000', {
+      path: '/api/socket/io',
       addTrailingSlash: false,
     });
     
@@ -61,8 +62,13 @@ export default function useSocket(gameId?: string) {
     
     socketInstance.on('connect_error', (err) => {
       console.error('Socket connection error:', err);
-      setError('Failed to connect to game server');
+      setError('Failed to connect to game server: ' + err.message);
       setIsLoading(false);
+    });
+    
+    // Add more detailed error logging
+    socketInstance.on('error', (err) => {
+      console.error('Socket error:', err);
     });
     
     return () => {

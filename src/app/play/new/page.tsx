@@ -9,13 +9,16 @@ import OnlineBoard from '../../components/OnlineBoard';
 
 export default function NewGamePage() {
   const router = useRouter();
-  const { gameState, error, isLoading, createGame } = useSocket();
+  const { gameState, error, isLoading, isConnected, createGame } = useSocket();
   const [copied, setCopied] = useState(false);
 
-  // Create a new game when the component mounts
+  // Create a new game when the component mounts and socket is connected
   useEffect(() => {
-    createGame();
-  }, [createGame]);
+    if (isConnected) {
+      console.log("Socket connected, creating game...");
+      createGame();
+    }
+  }, [isConnected, createGame]);
 
   // Redirect to the game when it's created
   useEffect(() => {

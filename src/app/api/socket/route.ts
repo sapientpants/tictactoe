@@ -38,16 +38,28 @@ function cleanupOldGames() {
 // Socket.io server instance
 let io: SocketIOServer;
 
+// Helper function to log Socket.io events
+function logIoEvent(event: string, data?: any) {
+  console.log(`Socket.io Event [${event}]:`, data);
+}
+
 export async function GET(req: NextRequest) {
-  if (!io) {
-    // Create Socket.io server if it doesn't exist
-    const res = new NextResponse();
-    const httpServer = res.socket?.server as unknown as NetServer;
-    
-    io = new SocketIOServer(httpServer, {
-      path: '/api/socket',
-      addTrailingSlash: false,
-    });
+  // Return a plain response early to avoid connection issues
+  console.log("Socket.io API route hit");
+  try {
+    if (!io) {
+      // Create Socket.io server if it doesn't exist
+      const res = new NextResponse();
+      
+      // Log if res.socket is available
+      if (!res.socket) {
+        console.error("Socket not available on NextResponse");
+        return NextResponse.json({ error: "Socket initialization failed" }, { status: 500 });
+      }
+      
+      const httpServer = res.socket?.server as unknown as NetServer;
+      
+      io = new SocketIOServer(httpServer);
     
     // Set up Socket.io connection handler
     io.on('connection', (socket) => {
@@ -170,7 +182,10 @@ export async function GET(req: NextRequest) {
     
     // Set up periodic cleanup
     setInterval(cleanupOldGames, 3600000); // Run every hour
+  } catch (error) {
+    console.error("Socket.io initialization error:", error);
+    return NextResponse.json({ error: "Socket server error" }, { status: 500 });
   }
   
-  return new Response('Socket.io server running');
+  return new NextResponse('Socket.io server running');
 }
