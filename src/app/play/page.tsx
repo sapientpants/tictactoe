@@ -5,9 +5,49 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ThemeProvider } from '../context/ThemeContext';
 import ThemeSelector from '../components/ThemeSelector';
+import { io } from 'socket.io-client';
+
+// Helper function to clean up any existing socket connections
+function cleanupSockets() {
+  // Try to disconnect any existing sockets
+  try {
+    // Get all possible socket.io connection keys from localStorage
+    const storageKeys = Object.keys(localStorage);
+    const socketKeys = storageKeys.filter(key => key.startsWith('socket.io'));
+    
+    if (socketKeys.length > 0) {
+      console.log("Cleaning up socket.io storage keys:", socketKeys);
+      socketKeys.forEach(key => localStorage.removeItem(key));
+    }
+    
+    // Create a temporary socket just to disconnect it properly
+    const tempSocket = io();
+    if (tempSocket) {
+      console.log("Disconnecting any existing socket connections");
+      tempSocket.disconnect();
+    }
+  } catch (e) {
+    console.error("Error cleaning up sockets:", e);
+  }
+}
 
 export default function PlayPage() {
   const router = useRouter();
+  
+  // Clean up any previous socket connections when mounting this component
+  useEffect(() => {
+    console.log("Play menu mounted, cleaning up previous games");
+    cleanupSockets();
+    
+    // Clear any game-related data from session/local storage if you have any
+    try {
+      // Example: Clear any game state you might be storing
+      sessionStorage.removeItem('ticTacToeGameState');
+      // Add other cleanup as needed
+    } catch (e) {
+      console.error("Error cleaning storage:", e);
+    }
+  }, []);
 
   return (
     <ThemeProvider>

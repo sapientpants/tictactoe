@@ -246,7 +246,26 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <div className="mt-6 flex gap-4">
           <Link
             href="/play"
-            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-opacity-90 transition-colors"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            onClick={() => {
+              // Disconnect socket to clear all state when exiting
+              if (socket) {
+                console.log("Disconnecting socket on exit");
+                socket.disconnect();
+              }
+              
+              // Clear any local storage or other state if needed
+              console.log("Cleaning up game state on exit");
+              
+              // Inform the server we're leaving (if still connected)
+              if (socket && socket.connected && gameState) {
+                try {
+                  socket.emit('leaveGame', { gameId: gameState.id });
+                } catch (e) {
+                  console.error("Error sending leaveGame event:", e);
+                }
+              }
+            }}
           >
             Exit Game
           </Link>

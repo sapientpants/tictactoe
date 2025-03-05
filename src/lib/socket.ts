@@ -281,6 +281,52 @@ export default function initSocketServer(server: NetServer) {
       }
     });
     
+    // Handle explicit game leaving (more graceful than disconnect)
+    socket.on('leaveGame', ({ gameId }) => {
+      console.log(`Player ${socket.id} is leaving game ${gameId}`);
+      
+      if (!gameId) {
+        console.error('No gameId provided in leaveGame event');
+        return;
+      }
+      
+      const game = games[gameId];
+      if (!game) {
+        console.log(`Game ${gameId} not found when player tried to leave`);
+        return;
+      }
+      
+      // Determine player role
+      let playerRole = null;
+      if (game.players.X === socket.id) {
+        playerRole = 'X';
+      } else if (game.players.O === socket.id) {
+        playerRole = 'O';
+      }
+      
+      if (!playerRole) {
+        console.log(`Player ${socket.id} not found in game ${gameId}`);
+        return;
+      }
+      
+      console.log(`Player ${playerRole} (${socket.id}) is leaving game ${gameId}`);
+      
+      // Leave the socket.io room
+      socket.leave(gameId);
+      
+      // Notify other player
+      io?.to(gameId).emit('playerLeft', { 
+        gameId, 
+        player: playerRole,
+        message: `Player ${playerRole} has left the game`
+      });
+      
+      // Optionally remove the player from the game
+      game.players[playerRole] = null;
+      
+      console.log(`Player ${playerRole} has left game ${gameId}`);
+    });
+    
     // Handle disconnections
     socket.on('disconnect', () => {
       console.log('Socket disconnected:', socket.id);
@@ -291,9 +337,11 @@ export default function initSocketServer(server: NetServer) {
         
         if (game.players.X === socket.id) {
           console.log(`Player X disconnected from game ${gameId}`);
+          game.players.X = null; // Remove the player from the game
           io?.to(gameId).emit('playerDisconnected', { player: 'X' });
         } else if (game.players.O === socket.id) {
           console.log(`Player O disconnected from game ${gameId}`);
+          game.players.O = null; // Remove the player from the game
           io?.to(gameId).emit('playerDisconnected', { player: 'O' });
         }
       });
