@@ -269,35 +269,33 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
           }}
         />
         
-        {gameState.role === 'X' && (
-          <div className="mt-6 flex justify-center">
-            <Link
-              href="/play"
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
-              onClick={() => {
-                // Disconnect socket to clear all state when exiting
-                if (socket) {
-                  console.log("Disconnecting socket on exit");
-                  socket.disconnect();
+        <div className="mt-6 flex justify-center">
+          <Link
+            href="/play"
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors font-medium"
+            onClick={() => {
+              // Disconnect socket to clear all state when exiting
+              if (socket) {
+                console.log("Disconnecting socket on exit");
+                socket.disconnect();
+              }
+              
+              // Clear any local storage or other state if needed
+              console.log("Cleaning up game state on exit");
+              
+              // Inform the server we're leaving (if still connected)
+              if (socket && socket.connected && gameState) {
+                try {
+                  socket.emit('leaveGame', { gameId: gameState.id });
+                } catch (e) {
+                  console.error("Error sending leaveGame event:", e);
                 }
-                
-                // Clear any local storage or other state if needed
-                console.log("Cleaning up game state on exit");
-                
-                // Inform the server we're leaving (if still connected)
-                if (socket && socket.connected && gameState) {
-                  try {
-                    socket.emit('leaveGame', { gameId: gameState.id });
-                  } catch (e) {
-                    console.error("Error sending leaveGame event:", e);
-                  }
-                }
-              }}
-            >
-              Exit Game
-            </Link>
-          </div>
-        )}
+              }
+            }}
+          >
+            Exit Game
+          </Link>
+        </div>
       </div>
     </ThemeProvider>
   );
