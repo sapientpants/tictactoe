@@ -84,25 +84,11 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
     );
   };
   
-  // Check if this player or opponent has requested a restart
+  // Get the player's role
   const playerRole = gameState.role || 'X';
-  const opponentRole = playerRole === 'X' ? 'O' : 'X';
-  
-  // Initialize restartRequested if it doesn't exist in gameState
-  const restartRequests = gameState.restartRequested || { X: false, O: false };
-  
-  // Check if player or opponent has requested restart
-  const hasRequestedRestart = !!restartRequests[playerRole];
-  const opponentRequestedRestart = !!restartRequests[opponentRole];
   
   // Debug
-  console.log('Restart state:', {
-    playerRole,
-    opponentRole,
-    restartRequests,
-    hasRequestedRestart,
-    opponentRequestedRestart
-  });
+  console.log('Player role:', playerRole);
   
   // Render game result message with restart button
   const renderGameResult = () => {
@@ -122,26 +108,11 @@ export default function OnlineBoard({ gameState, onSquareClick, onRequestRestart
               : 'Game ended in a draw!'}
           </p>
           
-          {opponentRequestedRestart && (
-            <div className="mb-3 p-2 bg-blue-100 dark:bg-blue-900 dark:bg-opacity-30 rounded">
-              <p className="text-sm">Opponent wants to play again!</p>
-            </div>
-          )}
-          
           <button 
             onClick={handleRestartRequest}
-            disabled={hasRequestedRestart}
-            className={`px-4 py-2 rounded-md transition-colors ${
-              hasRequestedRestart
-                ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-                : 'bg-primary text-white hover:bg-opacity-90'
-            }`}
+            className="px-4 py-2 rounded-md transition-colors bg-primary text-white hover:bg-opacity-90"
           >
-            {hasRequestedRestart 
-              ? 'Waiting for opponent...' 
-              : opponentRequestedRestart 
-                ? 'Accept Rematch' 
-                : 'Request Rematch'}
+            Play Again
           </button>
         </div>
       );

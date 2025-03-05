@@ -196,7 +196,7 @@ export default function initSocketServer(server: NetServer) {
       io?.to(gameId).emit('gameUpdated', game);
     });
     
-    // Handle game restart request
+    // Handle game restart request - simplified to allow any player to restart
     socket.on('restartGame', ({ gameId }) => {
       console.log(`Restart game request for ${gameId} from ${socket.id}`);
       
@@ -207,7 +207,7 @@ export default function initSocketServer(server: NetServer) {
         return socket.emit('error', { message: 'Game not found' });
       }
       
-      // Determine player's role
+      // Determine if player is part of this game
       const isPlayerX = game.players.X === socket.id;
       const isPlayerO = game.players.O === socket.id;
       
@@ -216,45 +216,25 @@ export default function initSocketServer(server: NetServer) {
         return socket.emit('error', { message: 'You are not a player in this game' });
       }
       
-      // Get player role
+      // Get player role for logging
       const playerRole = isPlayerX ? 'X' : 'O';
-      console.log(`Player ${playerRole} requesting restart for game ${gameId}`);
+      console.log(`Player ${playerRole} restarted game ${gameId}`);
       
-      // Initialize restart tracking if not exists
-      if (!game.restartRequested) {
-        game.restartRequested = { X: false, O: false };
-      }
+      // Reset the game board immediately
+      game.squares = Array(9).fill(null);
+      game.currentTurn = 'X'; // X always starts
+      game.lastUpdated = Date.now();
       
-      // Mark this player as having requested restart
-      game.restartRequested[playerRole] = true;
+      // Reset restart requested state (in case it was previously used)
+      game.restartRequested = { X: false, O: false };
       
-      console.log('Game restart status:', game.restartRequested);
+      // Notify all players of restart
+      io?.to(gameId).emit('gameRestarted', {
+        ...game,
+        restartedBy: playerRole
+      });
       
-      // Check if both players have requested restart
-      const bothPlayersRequested = game.restartRequested.X && game.restartRequested.O;
-      
-      if (bothPlayersRequested) {
-        console.log(`Both players have requested restart for game ${gameId}, restarting now`);
-        
-        // Reset the game board
-        game.squares = Array(9).fill(null);
-        game.currentTurn = 'X'; // X always starts
-        game.lastUpdated = Date.now();
-        game.restartRequested = { X: false, O: false };
-        
-        // Notify all players of restart
-        io?.to(gameId).emit('gameRestarted', game);
-        console.log(`Game ${gameId} has been restarted successfully`);
-      } else {
-        console.log(`Notifying players about restart request in game ${gameId}`);
-        
-        // Notify all players of the restart request (even the requester for confirmation)
-        io?.to(gameId).emit('restartRequested', { 
-          gameId,
-          requestedBy: playerRole,
-          bothPlayersRequested: false
-        });
-      }
+      console.log(`Game ${gameId} has been restarted by player ${playerRole}`);
     });
     
     // Handle disconnections

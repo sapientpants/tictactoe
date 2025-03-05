@@ -138,7 +138,6 @@ export default function useSocket(gameId?: string) {
     socket.off('opponentJoined');
     socket.off('gameUpdated');
     socket.off('playerDisconnected');
-    socket.off('restartRequested');
     socket.off('gameRestarted');
     socket.off('error');
     
@@ -205,24 +204,7 @@ export default function useSocket(gameId?: string) {
       });
     });
     
-    // Handle restart requests
-    socket.on('restartRequested', (data) => {
-      console.log('Restart requested:', data);
-      // Ensure we have a valid restartRequested object
-      setGameState(prev => {
-        if (!prev) return null;
-        // Initialize restart requested if it doesn't exist
-        const currentRestartRequested = prev.restartRequested || { X: false, O: false };
-        console.log('Current restart state:', currentRestartRequested, 'Setting', data.requestedBy, 'to true');
-        return {
-          ...prev,
-          restartRequested: {
-            ...currentRestartRequested,
-            [data.requestedBy]: true
-          }
-        };
-      });
-    });
+    // We can remove the restartRequested handler since we now restart immediately
     
     // Handle game restart
     socket.on('gameRestarted', (data) => {
@@ -292,27 +274,6 @@ export default function useSocket(gameId?: string) {
     }
     
     console.log("Requesting game restart for game:", gameState.id, "as player:", gameState.role);
-    
-    // Update local state immediately for better UI feedback
-    setGameState(prev => {
-      if (!prev) return null;
-      
-      const currentRestartRequested = prev.restartRequested || { X: false, O: false };
-      const playerRole = prev.role || 'X';
-      
-      console.log("Updating local restart state:", {
-        ...currentRestartRequested,
-        [playerRole]: true
-      });
-      
-      return {
-        ...prev,
-        restartRequested: {
-          ...currentRestartRequested,
-          [playerRole]: true
-        }
-      };
-    });
     
     // Send restart request to server
     socket.emit('restartGame', { gameId: gameState.id });
