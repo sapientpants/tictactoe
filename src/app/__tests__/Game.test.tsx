@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import Game from '../components/Game';
+import GameTest from '../components/GameTest';
 
 // Helper function to extract calculateWinner for unit testing
 import { calculateWinner } from '../utils/gameUtils';
 
 describe('Game Component', () => {
   it('renders an empty board initially', () => {
-    render(<Game />);
+    render(<GameTest />);
     
     // The game should have 9 empty squares
     const buttons = screen.getAllByRole('button');
@@ -21,12 +21,12 @@ describe('Game Component', () => {
   });
 
   it('shows the correct initial game status', () => {
-    render(<Game />);
+    render(<GameTest />);
     expect(screen.getByText('Next player: X')).toBeInTheDocument();
   });
 
   it('places X and O alternately when clicking squares', () => {
-    render(<Game />);
+    render(<GameTest />);
     
     const buttons = screen.getAllByRole('button');
     // Find the 9 square buttons (excluding the reset button)
@@ -44,7 +44,7 @@ describe('Game Component', () => {
   });
 
   it('does not change a square that has already been clicked', () => {
-    render(<Game />);
+    render(<GameTest />);
     
     const buttons = screen.getAllByRole('button');
     const squareButtons = buttons.filter(button => !button.textContent?.includes('Restart'));
@@ -60,7 +60,7 @@ describe('Game Component', () => {
   });
 
   it('resets the game when Restart button is clicked', () => {
-    render(<Game />);
+    render(<GameTest />);
     
     const buttons = screen.getAllByRole('button');
     const squareButtons = buttons.filter(button => !button.textContent?.includes('Restart'));
